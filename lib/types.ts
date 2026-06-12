@@ -32,3 +32,10 @@ export type Product = {
 export type ProductInput = Omit<Product, "id" | "created_at" | "updated_at" | "category"> & {
   id?: string;
 };
+
+export type ProductMutationInput = Omit<
+  Product,
+  "id" | "created_at" | "updated_at" | "category"
+>;
+
+export type CategoryMutationInput = Pick<Category, "name" | "slug">;

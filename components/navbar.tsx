@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { Logo } from "@/components/logo";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { cn } from "@/lib/utils";
 
@@ -12,8 +13,8 @@ const links = [
   { href: "/", label: "Início" },
   { href: "/catalogo", label: "Catálogo" },
   { href: "/sobre", label: "Sobre" },
-  { href: "/catalogo#produtos", label: "Produtos" },
-  { href: "/contato", label: "Contato" }
+  { href: "/contato", label: "Contato" },
+  { href: "/login", label: "Admin" }
 ];
 
 export function Navbar() {
@@ -28,16 +29,14 @@ export function Navbar() {
         transition={{ duration: 0.55, ease: "easeOut" }}
         className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-white/10 bg-horebe-black/72 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-2xl md:px-5"
       >
-        <Link href="/" className="focus-ring flex items-center gap-3 rounded-full">
-          <span className="grid h-9 w-9 place-items-center rounded-full border border-horebe-gold/40 bg-horebe-green text-sm font-bold text-horebe-gold">
-            MH
-          </span>
-          <span className="font-display text-lg text-horebe-soft">Monte Horebe</span>
+        <Link href="/" className="focus-ring min-w-0 rounded-full">
+          <Logo size="sm" textClassName="text-lg" />
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">
           {links.map((link) => {
             const active = pathname === link.href;
+
             return (
               <Link
                 key={link.href}

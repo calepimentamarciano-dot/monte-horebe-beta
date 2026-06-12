@@ -1,5 +1,6 @@
 import { Instagram, Mail, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { getWhatsAppUrl } from "@/lib/utils";
 
@@ -8,7 +9,7 @@ const footerLinks = [
   { href: "/catalogo", label: "Catálogo" },
   { href: "/sobre", label: "Sobre" },
   { href: "/contato", label: "Contato" },
-  { href: "/admin", label: "Admin" }
+  { href: "/login", label: "Admin" }
 ];
 
 export function Footer() {
@@ -16,11 +17,8 @@ export function Footer() {
     <footer className="border-t border-white/10 bg-black py-14">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 md:grid-cols-[1.4fr_0.8fr_0.8fr]">
         <div>
-          <div className="mb-4 flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full border border-horebe-gold/40 bg-horebe-green font-bold text-horebe-gold">
-              MH
-            </span>
-            <span className="font-display text-2xl text-horebe-soft">Monte Horebe</span>
+          <div className="mb-4">
+            <Logo size="md" textClassName="text-2xl" />
           </div>
           <p className="max-w-md leading-7 text-horebe-gray">
             Cafés especiais selecionados para experiências premium, negócios, revenda e

@@ -1,156 +1,75 @@
 "use client";
 
 import { Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useActionState, useState } from "react";
+import { saveProductAction, type ProductActionState } from "@/app/admin/produtos/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { slugify } from "@/lib/slugify";
 import type { Category, Product } from "@/lib/types";
-import { slugify } from "@/lib/utils";
-
-export type ProductFormValues = {
-  id?: string;
-  name: string;
-  slug: string;
-  short_description: string;
-  description: string;
-  price: number | null;
-  image_url: string | null;
-  gallery: string[] | null;
-  category_id: string | null;
-  origin: string;
-  altitude: string;
-  variety: string;
-  roast_level: string;
-  score_sca: number | null;
-  sensory_notes: string[];
-  recommended_methods: string[];
-  is_featured: boolean;
-  is_active: boolean;
-};
 
 type ProductFormProps = {
   categories: Category[];
-  editingProduct?: Product | null;
-  onSubmit: (values: ProductFormValues, file: File | null) => Promise<void>;
-  onCancelEdit: () => void;
-  disabled?: boolean;
+  product?: Product | null;
 };
 
-const emptyValues: ProductFormValues = {
-  name: "",
-  slug: "",
-  short_description: "",
-  description: "",
-  price: null,
-  image_url: null,
-  gallery: null,
-  category_id: null,
-  origin: "",
-  altitude: "",
-  variety: "",
-  roast_level: "Média",
-  score_sca: null,
-  sensory_notes: [],
-  recommended_methods: [],
-  is_featured: true,
-  is_active: true
-};
+const initialState: ProductActionState = {};
 
-export function ProductForm({
-  categories,
-  editingProduct,
-  onSubmit,
-  onCancelEdit,
-  disabled
-}: ProductFormProps) {
-  const [values, setValues] = useState<ProductFormValues>(emptyValues);
-  const [notesText, setNotesText] = useState("");
-  const [methodsText, setMethodsText] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [saving, setSaving] = useState(false);
+export function ProductForm({ categories, product }: ProductFormProps) {
+  const [state, formAction, pending] = useActionState(saveProductAction, initialState);
+  const [name, setName] = useState(product?.name ?? "");
+  const [slug, setSlug] = useState(product?.slug ?? "");
+  const [slugTouched, setSlugTouched] = useState(Boolean(product?.slug));
 
-  useEffect(() => {
-    if (!editingProduct) {
-      setValues(emptyValues);
-      setNotesText("");
-      setMethodsText("");
-      setFile(null);
-      return;
-    }
-
-    setValues({
-      id: editingProduct.id,
-      name: editingProduct.name,
-      slug: editingProduct.slug,
-      short_description: editingProduct.short_description ?? "",
-      description: editingProduct.description ?? "",
-      price: editingProduct.price,
-      image_url: editingProduct.image_url,
-      gallery: editingProduct.gallery,
-      category_id: editingProduct.category_id,
-      origin: editingProduct.origin ?? "",
-      altitude: editingProduct.altitude ?? "",
-      variety: editingProduct.variety ?? "",
-      roast_level: editingProduct.roast_level ?? "",
-      score_sca: editingProduct.score_sca,
-      sensory_notes: editingProduct.sensory_notes ?? [],
-      recommended_methods: editingProduct.recommended_methods ?? [],
-      is_featured: editingProduct.is_featured,
-      is_active: editingProduct.is_active
-    });
-    setNotesText((editingProduct.sensory_notes ?? []).join(", "));
-    setMethodsText((editingProduct.recommended_methods ?? []).join(", "));
-    setFile(null);
-  }, [editingProduct]);
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    try {
-      await onSubmit(
-        {
-          ...values,
-          slug: values.slug || slugify(values.name),
-          sensory_notes: splitList(notesText),
-          recommended_methods: splitList(methodsText)
-        },
-        file
-      );
-      if (!editingProduct) {
-        setValues(emptyValues);
-        setNotesText("");
-        setMethodsText("");
-        setFile(null);
-      }
-    } finally {
-      setSaving(false);
+  function handleNameChange(value: string) {
+    setName(value);
+    if (!slugTouched) {
+      setSlug(slugify(value));
     }
   }
 
+  function handleSlugChange(value: string) {
+    setSlugTouched(true);
+    setSlug(slugify(value));
+  }
+
   return (
-    <form id="produtos" onSubmit={handleSubmit} className="glass-panel rounded-[1.5rem] p-5">
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <h2 className="font-display text-3xl text-horebe-soft">
-            {editingProduct ? "Editar produto" : "Novo produto"}
-          </h2>
-          <p className="text-sm text-horebe-gray">Cadastre cafés, notas e dados técnicos.</p>
-        </div>
-        {editingProduct ? (
-          <button
-            type="button"
-            onClick={onCancelEdit}
-            className="focus-ring rounded-full border border-white/10 px-4 py-2 text-sm text-horebe-gray"
-          >
-            Cancelar
-          </button>
-        ) : null}
-      </div>
+    <form action={formAction} className="glass-panel rounded-2xl p-5">
+      <input type="hidden" name="id" value={product?.id ?? ""} />
+      <input type="hidden" name="image_url" value={product?.image_url ?? ""} />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Input label="Nome" value={values.name} onChange={(value) => setValues({ ...values, name: value, slug: values.slug || slugify(value) })} required />
-        <Input label="Slug" value={values.slug} onChange={(value) => setValues({ ...values, slug: slugify(value) })} required />
-        <Input label="Descrição curta" value={values.short_description} onChange={(value) => setValues({ ...values, short_description: value })} />
-        <Input label="Preço" type="number" value={values.price ?? ""} onChange={(value) => setValues({ ...values, price: value ? Number(value) : null })} />
-        <Select label="Categoria" value={values.category_id ?? ""} onChange={(value) => setValues({ ...values, category_id: value || null })}>
+        <Input
+          label="Nome do produto"
+          name="name"
+          value={name}
+          onChange={(event) => handleNameChange(event.target.value)}
+          required
+        />
+        <Input
+          label="Slug"
+          name="slug"
+          value={slug}
+          onChange={(event) => handleSlugChange(event.target.value)}
+          required
+        />
+        <Input
+          label="Descrição curta"
+          name="short_description"
+          defaultValue={product?.short_description ?? ""}
+        />
+        <Input
+          label="Preço"
+          name="price"
+          type="number"
+          step="0.01"
+          min="0"
+          defaultValue={product?.price ?? ""}
+        />
+        <Select label="Categoria" name="category_id" defaultValue={product?.category_id ?? ""}>
           <option value="">Sem categoria</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
@@ -158,137 +77,91 @@ export function ProductForm({
             </option>
           ))}
         </Select>
-        <Select label="Torra" value={values.roast_level} onChange={(value) => setValues({ ...values, roast_level: value })}>
-          <option>Média clara</option>
-          <option>Média</option>
-          <option>Média escura</option>
-          <option>Clara</option>
-          <option>Escura</option>
+        <Select label="Nível de torra" name="roast_level" defaultValue={product?.roast_level ?? "Média"}>
+          <option value="Clara">Clara</option>
+          <option value="Média clara">Média clara</option>
+          <option value="Média">Média</option>
+          <option value="Média escura">Média escura</option>
+          <option value="Escura">Escura</option>
         </Select>
-        <Input label="Origem" value={values.origin} onChange={(value) => setValues({ ...values, origin: value })} />
-        <Input label="Altitude" value={values.altitude} onChange={(value) => setValues({ ...values, altitude: value })} />
-        <Input label="Variedade" value={values.variety} onChange={(value) => setValues({ ...values, variety: value })} />
-        <Input label="Pontuação SCA" type="number" value={values.score_sca ?? ""} onChange={(value) => setValues({ ...values, score_sca: value ? Number(value) : null })} />
-        <Input label="Notas sensoriais" value={notesText} onChange={setNotesText} placeholder="chocolate, caramelo, castanhas" />
-        <Input label="Métodos recomendados" value={methodsText} onChange={setMethodsText} placeholder="V60, espresso, prensa francesa" />
+        <Input label="Origem" name="origin" defaultValue={product?.origin ?? ""} />
+        <Input label="Altitude" name="altitude" defaultValue={product?.altitude ?? ""} />
+        <Input label="Variedade" name="variety" defaultValue={product?.variety ?? ""} />
+        <Input
+          label="Pontuação SCA"
+          name="score_sca"
+          type="number"
+          step="0.1"
+          min="0"
+          defaultValue={product?.score_sca ?? ""}
+        />
+        <Input
+          label="Notas sensoriais"
+          name="sensory_notes"
+          placeholder="chocolate, caramelo, castanhas"
+          defaultValue={(product?.sensory_notes ?? []).join(", ")}
+        />
+        <Input
+          label="Métodos recomendados"
+          name="recommended_methods"
+          placeholder="V60, espresso, prensa francesa"
+          defaultValue={(product?.recommended_methods ?? []).join(", ")}
+        />
       </div>
 
-      <label className="mt-4 grid gap-2">
-        <span className="text-sm font-semibold text-horebe-soft">Descrição completa</span>
-        <textarea
-          value={values.description}
-          onChange={(event) => setValues({ ...values, description: event.target.value })}
-          rows={4}
-          className="focus-ring rounded-3xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-horebe-soft"
+      <div className="mt-4">
+        <Textarea
+          label="Descrição completa"
+          name="description"
+          rows={5}
+          defaultValue={product?.description ?? ""}
         />
-      </label>
+      </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-3">
-        <label className="grid gap-2">
-          <span className="text-sm font-semibold text-horebe-soft">Imagem</span>
+        <Input label="Upload de imagem principal" name="image" type="file" accept="image/*" />
+        <label className="flex items-center gap-3 rounded-3xl border border-white/10 bg-black/20 px-4 py-3">
           <input
-            type="file"
-            accept="image/*"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            className="focus-ring rounded-full border border-white/10 bg-black/30 px-4 py-3 text-sm text-horebe-gray"
+            type="checkbox"
+            name="is_active"
+            defaultChecked={product?.is_active ?? true}
+            className="h-4 w-4 accent-horebe-gold"
           />
+          <span className="text-sm text-horebe-soft">Produto ativo</span>
         </label>
-        <Checkbox label="Produto em destaque" checked={values.is_featured} onChange={(checked) => setValues({ ...values, is_featured: checked })} />
-        <Checkbox label="Produto ativo" checked={values.is_active} onChange={(checked) => setValues({ ...values, is_active: checked })} />
+        <label className="flex items-center gap-3 rounded-3xl border border-white/10 bg-black/20 px-4 py-3">
+          <input
+            type="checkbox"
+            name="is_featured"
+            defaultChecked={product?.is_featured ?? false}
+            className="h-4 w-4 accent-horebe-gold"
+          />
+          <span className="text-sm text-horebe-soft">Produto em destaque</span>
+        </label>
       </div>
 
-      <button
-        type="submit"
-        disabled={disabled || saving}
-        className="focus-ring mt-6 inline-flex items-center gap-2 rounded-full bg-horebe-gold px-6 py-3 text-sm font-semibold text-horebe-black disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <Save className="h-4 w-4" aria-hidden />
-        {saving ? "Salvando..." : "Salvar produto"}
-      </button>
+      {product?.image_url ? (
+        <p className="mt-3 text-xs text-horebe-gray">Imagem atual cadastrada. Envie uma nova apenas se quiser substituir.</p>
+      ) : null}
+
+      {state.error ? (
+        <div className="mt-5 rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+          {state.error}
+        </div>
+      ) : null}
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <Button type="submit" disabled={pending}>
+          <Save className="h-4 w-4" aria-hidden />
+          {pending ? "Salvando..." : "Salvar produto"}
+        </Button>
+        <Link
+          href="/admin/produtos"
+          className="focus-ring inline-flex items-center justify-center rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-horebe-soft hover:border-horebe-gold hover:text-horebe-gold"
+        >
+          Cancelar
+        </Link>
+      </div>
     </form>
-  );
-}
-
-function splitList(value: string) {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function Input({
-  label,
-  value,
-  onChange,
-  type = "text",
-  placeholder,
-  required
-}: {
-  label: string;
-  value: string | number;
-  onChange: (value: string) => void;
-  type?: string;
-  placeholder?: string;
-  required?: boolean;
-}) {
-  return (
-    <label className="grid gap-2">
-      <span className="text-sm font-semibold text-horebe-soft">{label}</span>
-      <input
-        type={type}
-        required={required}
-        value={value}
-        placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)}
-        className="focus-ring h-12 rounded-full border border-white/10 bg-black/30 px-4 text-sm text-horebe-soft placeholder:text-horebe-gray"
-      />
-    </label>
-  );
-}
-
-function Select({
-  label,
-  value,
-  onChange,
-  children
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="grid gap-2">
-      <span className="text-sm font-semibold text-horebe-soft">{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="focus-ring h-12 rounded-full border border-white/10 bg-black/30 px-4 text-sm text-horebe-soft"
-      >
-        {children}
-      </select>
-    </label>
-  );
-}
-
-function Checkbox({
-  label,
-  checked,
-  onChange
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center gap-3 rounded-3xl border border-white/10 bg-black/20 px-4 py-3">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="h-4 w-4 accent-horebe-gold"
-      />
-      <span className="text-sm text-horebe-soft">{label}</span>
-    </label>
   );
 }

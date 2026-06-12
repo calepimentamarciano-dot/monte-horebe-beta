@@ -1,11 +1,10 @@
 import { Award, Coffee, Handshake, Leaf, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { BrandStoryVisual } from "@/components/brand-story-visual";
 import { FeatureCard } from "@/components/feature-card";
 import { Hero } from "@/components/hero";
 import { fadeUp, MotionWrapper, staggerContainer } from "@/components/motion-wrapper";
 import { ProductCarousel } from "@/components/product-carousel";
-import { ProductMockup } from "@/components/product-mockup";
-import { ProductVisual } from "@/components/product-visual";
 import { SectionHeading } from "@/components/section-heading";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { getFeaturedProducts } from "@/lib/products";
@@ -86,11 +85,17 @@ export default async function Home() {
             <h2 className="font-display text-4xl leading-tight text-horebe-soft md:text-6xl">
               Tradição, origem e excelência em cada xícara.
             </h2>
-            <p className="mt-6 text-lg leading-8 text-horebe-gray">
-              A Monte Horebe nasceu com o propósito de levar cafés especiais para pessoas
-              e negócios que valorizam qualidade, cuidado e uma experiência sensorial
-              marcante.
-            </p>
+            <div className="mt-6 grid gap-4 text-lg leading-8 text-horebe-gray">
+              <p>
+                Desde gerações, nossa família dedica-se com paixão ao universo do café,
+                cultivando e produzindo grãos artesanais que carregam tradição, cuidado e
+                qualidade.
+              </p>
+              <p>
+                Agora, damos um novo passo para compartilhar não apenas o nosso próprio café,
+                mas também uma seleção especial de cafés gourmet e de qualidade superior.
+              </p>
+            </div>
             <Link
               href="/sobre"
               className="focus-ring mt-8 inline-flex rounded-full border border-horebe-gold/40 px-6 py-3 text-sm font-semibold text-horebe-gold transition hover:bg-horebe-gold hover:text-horebe-black"
@@ -104,19 +109,8 @@ export default async function Home() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
-            className="glass-panel relative overflow-hidden rounded-[2rem] p-4"
           >
-            <ProductVisual name="Origem Monte Horebe" notes={["natureza", "qualidade"]} size="large" />
-            <div className="absolute left-8 top-8 grid gap-3">
-              {["Café Especial", "Origem Selecionada", "Qualidade Premium"].map((seal) => (
-                <span
-                  key={seal}
-                  className="rounded-full border border-horebe-gold/25 bg-black/35 px-4 py-2 text-sm font-semibold text-horebe-soft backdrop-blur-xl"
-                >
-                  {seal}
-                </span>
-              ))}
-            </div>
+            <BrandStoryVisual />
           </MotionWrapper>
         </div>
       </section>
@@ -143,19 +137,6 @@ export default async function Home() {
               ))}
             </div>
           </MotionWrapper>
-        </div>
-      </section>
-
-      <section className="bg-horebe-black px-4 py-24">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <SectionHeading
-              align="left"
-              title="Um catálogo digital feito para apresentar cafés com sofisticação."
-              description="Cada produto tem uma página própria com notas sensoriais, origem, torra, descrição e chamada direta para atendimento."
-            />
-          </div>
-          <ProductMockup />
         </div>
       </section>
 

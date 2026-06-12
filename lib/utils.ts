@@ -14,15 +14,6 @@ export function formatCurrency(value?: number | null) {
   }).format(value);
 }
 
-export function slugify(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 export function getWhatsAppUrl(message: string) {
   const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "") ?? "";
   const encodedMessage = encodeURIComponent(message);

@@ -128,10 +128,11 @@ using (true);
 
 insert into public.categories (name, slug)
 values
-  ('Especiais', 'especiais'),
-  ('Premium', 'premium'),
+  ('Cafés Especiais', 'cafes-especiais'),
   ('Espresso', 'espresso'),
-  ('Filtrados', 'filtrados')
+  ('Filtrados', 'filtrados'),
+  ('Gourmet', 'gourmet'),
+  ('Linha Premium', 'linha-premium')
 on conflict (slug) do nothing;
 
 insert into storage.buckets (id, name, public)

@@ -3,7 +3,6 @@ import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
-import { WhatsAppButton } from "@/components/whatsapp-button";
 import { siteUrl } from "@/lib/utils";
 
 const inter = Inter({
@@ -52,7 +51,6 @@ export default function RootLayout({
         <Navbar />
         <main>{children}</main>
         <Footer />
-        <WhatsAppButton floating />
       </body>
     </html>
   );

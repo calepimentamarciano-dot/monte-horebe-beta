@@ -1,32 +1,68 @@
 "use client";
 
-import { Edit3, Trash2 } from "lucide-react";
+import { CheckCircle2, Edit3, ImageIcon, Star, Trash2, XCircle } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import {
+  deleteProductAction,
+  toggleProductActiveAction,
+  toggleProductFeaturedAction
+} from "@/app/admin/produtos/actions";
+import { Button } from "@/components/ui/button";
 import type { Product } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 type ProductTableProps = {
   products: Product[];
-  onEdit: (product: Product) => void;
-  onDelete: (product: Product) => Promise<void>;
-  disabled?: boolean;
 };
 
-export function ProductTable({ products, onEdit, onDelete, disabled }: ProductTableProps) {
-  return (
-    <div className="glass-panel overflow-hidden rounded-[1.5rem]">
-      <div className="border-b border-white/10 p-5">
-        <h2 className="font-display text-3xl text-horebe-soft">Produtos cadastrados</h2>
-        <p className="text-sm text-horebe-gray">Edite catálogo, status e destaques.</p>
+export function ProductTable({ products }: ProductTableProps) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  function runAction(action: () => Promise<void>) {
+    startTransition(async () => {
+      await action();
+      router.refresh();
+    });
+  }
+
+  function handleDelete(product: Product) {
+    const confirmed = window.confirm("Tem certeza que deseja excluir este produto?");
+    if (!confirmed) return;
+    runAction(() => deleteProductAction(product.id));
+  }
+
+  if (!products.length) {
+    return (
+      <div className="glass-panel rounded-2xl p-8 text-center">
+        <p className="font-display text-3xl text-horebe-soft">Nenhum produto cadastrado ainda.</p>
+        <p className="mt-2 text-sm text-horebe-gray">Adicione o primeiro item para alimentar o catálogo público.</p>
+        <Link
+          href="/admin/produtos/novo"
+          className="focus-ring mt-6 inline-flex rounded-full bg-horebe-gold px-5 py-3 text-sm font-semibold text-horebe-black"
+        >
+          Novo Produto
+        </Link>
       </div>
+    );
+  }
+
+  return (
+    <div className="glass-panel overflow-hidden rounded-2xl">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-white/[0.035] text-xs uppercase tracking-[0.18em] text-horebe-gray">
+        <table className="w-full min-w-[980px] text-left text-sm">
+          <thead className="bg-white/[0.035] text-xs uppercase tracking-[0.16em] text-horebe-gray">
             <tr>
-              <th className="px-5 py-4">Produto</th>
+              <th className="px-5 py-4">Imagem</th>
+              <th className="px-5 py-4">Nome</th>
+              <th className="px-5 py-4">Categoria</th>
               <th className="px-5 py-4">Torra</th>
-              <th className="px-5 py-4">SCA</th>
               <th className="px-5 py-4">Preço</th>
               <th className="px-5 py-4">Status</th>
+              <th className="px-5 py-4">Destaque</th>
               <th className="px-5 py-4 text-right">Ações</th>
             </tr>
           </thead>
@@ -34,37 +70,76 @@ export function ProductTable({ products, onEdit, onDelete, disabled }: ProductTa
             {products.map((product) => (
               <tr key={product.id} className="border-t border-white/10 text-horebe-soft">
                 <td className="px-5 py-4">
+                  {product.image_url ? (
+                    <Image
+                      src={product.image_url}
+                      alt=""
+                      width={56}
+                      height={56}
+                      unoptimized
+                      className="h-14 w-14 rounded-2xl object-cover"
+                    />
+                  ) : (
+                    <span className="grid h-14 w-14 place-items-center rounded-2xl bg-horebe-green/70 text-horebe-gold">
+                      <ImageIcon className="h-5 w-5" aria-hidden />
+                    </span>
+                  )}
+                </td>
+                <td className="px-5 py-4">
                   <p className="font-semibold">{product.name}</p>
                   <p className="text-xs text-horebe-gray">{product.slug}</p>
                 </td>
-                <td className="px-5 py-4 text-horebe-gray">{product.roast_level}</td>
-                <td className="px-5 py-4 text-horebe-gray">{product.score_sca ?? "-"}</td>
+                <td className="px-5 py-4 text-horebe-gray">{product.category?.name ?? "Sem categoria"}</td>
+                <td className="px-5 py-4 text-horebe-gray">{product.roast_level ?? "-"}</td>
                 <td className="px-5 py-4 text-horebe-gray">{formatCurrency(product.price) ?? "Sob consulta"}</td>
                 <td className="px-5 py-4">
-                  <span className="rounded-full bg-horebe-gold/10 px-3 py-1 text-xs text-horebe-gold">
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => runAction(() => toggleProductActiveAction(product.id, !product.is_active))}
+                    className="focus-ring inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs text-horebe-soft hover:border-horebe-gold"
+                  >
+                    {product.is_active ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-300" aria-hidden />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-300" aria-hidden />
+                    )}
                     {product.is_active ? "Ativo" : "Inativo"}
-                  </span>
+                  </button>
+                </td>
+                <td className="px-5 py-4">
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => runAction(() => toggleProductFeaturedAction(product.id, !product.is_featured))}
+                    className="focus-ring inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs text-horebe-soft hover:border-horebe-gold"
+                  >
+                    <Star
+                      className={product.is_featured ? "h-4 w-4 fill-horebe-gold text-horebe-gold" : "h-4 w-4"}
+                      aria-hidden
+                    />
+                    {product.is_featured ? "Sim" : "Não"}
+                  </button>
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(product)}
-                      disabled={disabled}
-                      className="focus-ring grid h-10 w-10 place-items-center rounded-full border border-white/10 text-horebe-gray transition hover:border-horebe-gold hover:text-horebe-gold disabled:opacity-50"
+                    <Link
+                      href={`/admin/produtos/${product.id}/editar`}
+                      className="focus-ring grid h-10 w-10 place-items-center rounded-full border border-white/10 text-horebe-gray transition hover:border-horebe-gold hover:text-horebe-gold"
                       aria-label={`Editar ${product.name}`}
                     >
                       <Edit3 className="h-4 w-4" aria-hidden />
-                    </button>
-                    <button
+                    </Link>
+                    <Button
                       type="button"
-                      onClick={() => onDelete(product)}
-                      disabled={disabled}
-                      className="focus-ring grid h-10 w-10 place-items-center rounded-full border border-white/10 text-horebe-gray transition hover:border-red-400 hover:text-red-300 disabled:opacity-50"
+                      variant="danger"
+                      disabled={pending}
+                      onClick={() => handleDelete(product)}
+                      className="h-10 w-10 px-0 py-0"
                       aria-label={`Excluir ${product.name}`}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden />
-                    </button>
+                    </Button>
                   </div>
                 </td>
               </tr>

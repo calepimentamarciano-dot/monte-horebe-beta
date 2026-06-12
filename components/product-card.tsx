@@ -24,6 +24,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <ProductVisual
         name={product.name}
         notes={product.sensory_notes}
+        imageUrl={product.image_url}
         className="transition duration-500 group-hover:border-horebe-gold/45"
       />
       <div className="p-4">

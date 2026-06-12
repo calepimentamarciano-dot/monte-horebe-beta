@@ -72,6 +72,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <ProductVisual
               name={product.name}
               notes={product.sensory_notes}
+              imageUrl={product.image_url}
               size="large"
               className="shadow-glow"
             />
