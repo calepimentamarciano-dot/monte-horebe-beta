@@ -1,0 +1,8 @@
+.next
+node_modules
+.env
+.env.local
+.env.*.local
+work/npm-cache
+dist
+out

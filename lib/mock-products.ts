@@ -1,0 +1,143 @@
+import type { Category, Product } from "@/lib/types";
+
+export const mockCategories: Category[] = [
+  { id: "cat-especiais", name: "Especiais", slug: "especiais" },
+  { id: "cat-premium", name: "Premium", slug: "premium" },
+  { id: "cat-espresso", name: "Espresso", slug: "espresso" },
+  { id: "cat-filtrados", name: "Filtrados", slug: "filtrados" }
+];
+
+export const mockProducts: Product[] = [
+  {
+    id: "monte-horebe-especial",
+    name: "Monte Horebe Especial",
+    slug: "monte-horebe-especial",
+    short_description: "Perfil equilibrado, doce e envolvente para o ritual diário.",
+    description:
+      "Um café especial com corpo elegante e finalização persistente, pensado para quem deseja uma experiência refinada sem abrir mão de conforto e tradição.",
+    price: 42,
+    image_url: null,
+    gallery: null,
+    category_id: "cat-especiais",
+    category: mockCategories[0],
+    origin: "Sul de Minas",
+    altitude: "1.100m",
+    variety: "Catuaí e Mundo Novo",
+    roast_level: "Média",
+    score_sca: 84,
+    sensory_notes: ["chocolate", "caramelo", "castanhas"],
+    recommended_methods: ["coado", "prensa francesa", "espresso"],
+    is_featured: true,
+    is_active: true
+  },
+  {
+    id: "monte-horebe-premium",
+    name: "Monte Horebe Premium",
+    slug: "monte-horebe-premium",
+    short_description: "Doçura alta, acidez delicada e notas amarelas.",
+    description:
+      "Selecionado para paladares exigentes, combina doçura natural, aroma delicado e uma xícara limpa, ideal para métodos filtrados.",
+    price: 58,
+    image_url: null,
+    gallery: null,
+    category_id: "cat-premium",
+    category: mockCategories[1],
+    origin: "Mantiqueira",
+    altitude: "1.250m",
+    variety: "Bourbon Amarelo",
+    roast_level: "Média clara",
+    score_sca: 86,
+    sensory_notes: ["mel", "frutas amarelas", "baunilha"],
+    recommended_methods: ["V60", "Chemex", "Aeropress"],
+    is_featured: true,
+    is_active: true
+  },
+  {
+    id: "monte-horebe-intenso",
+    name: "Monte Horebe Intenso",
+    slug: "monte-horebe-intenso",
+    short_description: "Corpo marcante, baixa acidez e final cacau.",
+    description:
+      "Uma seleção intensa e sofisticada para quem prefere xícaras encorpadas, com doçura de rapadura e perfil de cacau.",
+    price: 44,
+    image_url: null,
+    gallery: null,
+    category_id: "cat-especiais",
+    category: mockCategories[0],
+    origin: "Cerrado Mineiro",
+    altitude: "980m",
+    variety: "Topázio",
+    roast_level: "Média escura",
+    score_sca: 83,
+    sensory_notes: ["cacau", "amêndoas", "rapadura"],
+    recommended_methods: ["espresso", "moka", "prensa francesa"],
+    is_featured: true,
+    is_active: true
+  },
+  {
+    id: "monte-horebe-gourmet",
+    name: "Monte Horebe Gourmet",
+    slug: "monte-horebe-gourmet",
+    short_description: "Café redondo, aromático e versátil para negócios.",
+    description:
+      "Criado para cafeterias, escritórios e revendedores que buscam padrão premium, boa presença de xícara e excelente consistência.",
+    price: 49,
+    image_url: null,
+    gallery: null,
+    category_id: "cat-premium",
+    category: mockCategories[1],
+    origin: "Alta Mogiana",
+    altitude: "1.050m",
+    variety: "Mundo Novo",
+    roast_level: "Média",
+    score_sca: 85,
+    sensory_notes: ["caramelo", "nozes", "chocolate ao leite"],
+    recommended_methods: ["coado", "espresso", "prensa francesa"],
+    is_featured: true,
+    is_active: true
+  },
+  {
+    id: "monte-horebe-espresso",
+    name: "Monte Horebe Espresso",
+    slug: "monte-horebe-espresso",
+    short_description: "Crema intensa, corpo alto e doçura de chocolate.",
+    description:
+      "Torra desenvolvida para máquinas de espresso, com equilíbrio entre força, dulçor e uma textura cremosa na xícara.",
+    price: 46,
+    image_url: null,
+    gallery: null,
+    category_id: "cat-espresso",
+    category: mockCategories[2],
+    origin: "Matas de Minas",
+    altitude: "1.000m",
+    variety: "Catucaí",
+    roast_level: "Média escura",
+    score_sca: 84,
+    sensory_notes: ["chocolate intenso", "corpo alto", "baixa acidez"],
+    recommended_methods: ["espresso", "moka"],
+    is_featured: true,
+    is_active: true
+  },
+  {
+    id: "monte-horebe-filtrado",
+    name: "Monte Horebe Filtrado",
+    slug: "monte-horebe-filtrado",
+    short_description: "Xícara clara, floral e delicadamente cítrica.",
+    description:
+      "Um lote luminoso para métodos filtrados, com aroma floral, acidez elegante e doçura limpa de mel.",
+    price: 62,
+    image_url: null,
+    gallery: null,
+    category_id: "cat-filtrados",
+    category: mockCategories[3],
+    origin: "Caparaó",
+    altitude: "1.300m",
+    variety: "Arara",
+    roast_level: "Clara",
+    score_sca: 87,
+    sensory_notes: ["floral", "cítrico leve", "mel"],
+    recommended_methods: ["V60", "Kalita", "Chemex"],
+    is_featured: true,
+    is_active: true
+  }
+];
