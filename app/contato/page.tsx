@@ -28,8 +28,14 @@ export default function ContactPage() {
 
           <div className="mt-8 grid gap-4">
             <ContactItem icon={MessageCircle} label="WhatsApp" value="Atendimento direto" />
-            <ContactItem icon={Instagram} label="Instagram" value="@montehorebe" />
-            <ContactItem icon={Mail} label="E-mail" value="contato@montehorebe.com.br" />
+            <ContactItem
+              icon={Instagram}
+              label="Instagram"
+              value="@montehorebecoffee"
+              href="https://www.instagram.com/montehorebecoffee"
+              external
+            />
+            <ContactItem icon={Mail} label="E-mail" value="montehorebecafesdaespeciais@gmail.com" href="mailto:montehorebecafesdaespeciais@gmail.com" />
             <ContactItem icon={MapPin} label="Localização" value="Atendimento nacional" />
           </div>
 
@@ -96,11 +102,15 @@ function Field({
 function ContactItem({
   icon: Icon,
   label,
-  value
+  value,
+  href,
+  external = false
 }: {
   icon: typeof MessageCircle;
   label: string;
   value: string;
+  href?: string;
+  external?: boolean;
 }) {
   return (
     <div className="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.045] p-4">
@@ -109,8 +119,13 @@ function ContactItem({
       </span>
       <div>
         <p className="text-sm font-semibold text-horebe-soft">{label}</p>
-        {label === "E-mail" ? (
-          <Link href={`mailto:${value}`} className="focus-ring rounded-lg text-sm text-horebe-gray hover:text-horebe-gold">
+        {href ? (
+          <Link
+            href={href}
+            target={external ? "_blank" : undefined}
+            rel={external ? "noopener noreferrer" : undefined}
+            className="focus-ring rounded-lg text-sm text-horebe-gray hover:text-horebe-gold"
+          >
             {value}
           </Link>
         ) : (

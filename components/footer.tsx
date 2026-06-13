@@ -55,11 +55,11 @@ export function Footer() {
               <MessageCircle className="h-4 w-4" aria-hidden />
               WhatsApp
             </Link>
-            <Link href="mailto:contato@montehorebe.com.br" className="focus-ring flex items-center gap-3 rounded-lg hover:text-horebe-gold">
+            <Link href="mailto:montehorebecafesdaespeciais@gmail.com" className="focus-ring flex items-center gap-3 rounded-lg hover:text-horebe-gold">
               <Mail className="h-4 w-4" aria-hidden />
-              contato@montehorebe.com.br
+              montehorebecafesdaespeciais@gmail.com
             </Link>
-            <Link href="https://instagram.com" target="_blank" rel="noreferrer" className="focus-ring flex items-center gap-3 rounded-lg hover:text-horebe-gold">
+            <Link href="https://www.instagram.com/montehorebecoffee" target="_blank" rel="noopener noreferrer" className="focus-ring flex items-center gap-3 rounded-lg hover:text-horebe-gold">
               <Instagram className="h-4 w-4" aria-hidden />
               Instagram
             </Link>
