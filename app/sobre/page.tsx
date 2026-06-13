@@ -57,7 +57,13 @@ export default function AboutPage() {
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </MotionWrapper>
-          <ProductVisual name="Monte Horebe" notes={["origem", "excelência"]} size="large" />
+          <ProductVisual
+            name="Monte Horebe"
+            notes={["origem", "excelência"]}
+            imageUrl="/images/sobre-monte-horebe-page.jpg"
+            imageContent="center-card"
+            size="large"
+          />
         </div>
 
         <div className="my-24 h-px gold-line" />
