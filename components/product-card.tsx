@@ -19,15 +19,15 @@ export function ProductCard({ product }: ProductCardProps) {
     <motion.article
       variants={fadeUp}
       {...scaleOnHover}
-      className="group min-w-0 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.045] p-3 shadow-card backdrop-blur-xl"
+      className="group min-w-0 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.045] shadow-card backdrop-blur-xl"
     >
       <ProductVisual
         name={product.name}
         notes={product.sensory_notes}
         imageUrl={product.image_url}
-        className="transition duration-500 group-hover:border-horebe-gold/45"
+        className="rounded-b-none border-x-0 border-t-0 transition duration-500 group-hover:border-horebe-gold/45"
       />
-      <div className="p-4">
+      <div className="p-4 pt-5">
         <div className="mb-3 flex items-center justify-between gap-3">
           <span className="rounded-full border border-horebe-gold/20 bg-horebe-gold/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-horebe-gold">
             {product.roast_level}
