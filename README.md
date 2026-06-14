@@ -84,6 +84,7 @@ A migration cria:
 - A imagem da seção `Sobre a marca` fica em `/public/images/sobre-monte-horebe.jpg`.
 - Para trocar a imagem da seção `Sobre a marca`, substitua o arquivo mantendo o mesmo nome.
 - O upload de imagem dos produtos é feito pelo admin: a imagem vai para o bucket `products` no Supabase Storage, a URL pública é salva em `products.image_url`, e catálogo, home e página do produto exibem essa imagem.
+- O upload de imagem do produto aceita JPG, PNG e WEBP. Tamanho máximo recomendado: 10 MB. O limite de Server Actions foi configurado para `10mb` em `next.config.ts`.
 - O botão flutuante do WhatsApp foi removido; os CTAs e links de WhatsApp continuam ativos nas áreas do site.
 
 ## Fallback sem Supabase

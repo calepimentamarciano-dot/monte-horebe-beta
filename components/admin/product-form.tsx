@@ -2,12 +2,14 @@
 
 import { Save } from "lucide-react";
 import Link from "next/link";
+import type { ChangeEvent, FormEvent } from "react";
 import { useActionState, useState } from "react";
 import { saveProductAction, type ProductActionState } from "@/app/admin/produtos/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { PRODUCT_IMAGE_ACCEPT, validateProductImageFile } from "@/lib/product-image-validation";
 import { slugify } from "@/lib/slugify";
 import type { Category, Product } from "@/lib/types";
 
@@ -23,6 +25,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
   const [name, setName] = useState(product?.name ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(Boolean(product?.slug));
+  const [imageError, setImageError] = useState("");
 
   function handleNameChange(value: string) {
     setName(value);
@@ -36,8 +39,24 @@ export function ProductForm({ categories, product }: ProductFormProps) {
     setSlug(slugify(value));
   }
 
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    setImageError(file ? validateProductImageFile(file) ?? "" : "");
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    const imageInput = event.currentTarget.elements.namedItem("image");
+    const file = imageInput instanceof HTMLInputElement ? imageInput.files?.[0] : null;
+    const error = file ? validateProductImageFile(file) : null;
+
+    if (error) {
+      event.preventDefault();
+      setImageError(error);
+    }
+  }
+
   return (
-    <form action={formAction} className="glass-panel rounded-2xl p-5">
+    <form action={formAction} onSubmit={handleSubmit} className="glass-panel rounded-2xl p-5">
       <input type="hidden" name="id" value={product?.id ?? ""} />
       <input type="hidden" name="image_url" value={product?.image_url ?? ""} />
 
@@ -119,7 +138,21 @@ export function ProductForm({ categories, product }: ProductFormProps) {
       </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-3">
-        <Input label="Upload de imagem principal" name="image" type="file" accept="image/*" />
+        <div>
+          <Input
+            label="Upload de imagem principal"
+            name="image"
+            type="file"
+            accept={PRODUCT_IMAGE_ACCEPT}
+            onChange={handleImageChange}
+            aria-invalid={Boolean(imageError)}
+          />
+          {imageError ? (
+            <p className="mt-2 text-xs text-red-100">{imageError}</p>
+          ) : (
+            <p className="mt-2 text-xs text-horebe-gray">JPG, PNG ou WEBP até 10 MB.</p>
+          )}
+        </div>
         <label className="flex items-center gap-3 rounded-3xl border border-white/10 bg-black/20 px-4 py-3">
           <input
             type="checkbox"
@@ -151,7 +184,7 @@ export function ProductForm({ categories, product }: ProductFormProps) {
       ) : null}
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || Boolean(imageError)}>
           <Save className="h-4 w-4" aria-hidden />
           {pending ? "Salvando..." : "Salvar produto"}
         </Button>
