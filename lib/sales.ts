@@ -23,6 +23,27 @@ export async function getSales(limit = 80): Promise<Sale[]> {
   return data as Sale[];
 }
 
+export async function getActiveSales(limit = 2000): Promise<Sale[]> {
+  if (!hasSupabaseServerEnv()) return [];
+
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("sales")
+    .select("*")
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) {
+    console.error("[sales:getActiveSales]", error);
+    return [];
+  }
+
+  return data as Sale[];
+}
+
 export async function getSalesByDateRange(startDate: Date, endDate: Date): Promise<Sale[]> {
   if (!hasSupabaseServerEnv()) return [];
 
@@ -100,6 +121,7 @@ export async function createSale(input: SaleInput) {
         sales_channel: cleanText(input.sales_channel),
         customer_name: cleanText(input.customer_name),
         notes: cleanText(input.notes),
+        status: "active",
         created_by: createdBy
       })
       .select("*")
@@ -146,6 +168,38 @@ export async function createSale(input: SaleInput) {
 
     console.error("[sales:createSale:unknown]", error);
     throw new Error(saleFriendlyError);
+  }
+}
+
+export async function cancelSale(saleId: string, reason?: string) {
+  const supabase = await createClient();
+  if (!supabase) {
+    throw new Error("Supabase não está configurado.");
+  }
+
+  try {
+    const { error } = await supabase.rpc("cancel_sale", {
+      p_sale_id: saleId,
+      p_reason: cleanText(reason)
+    });
+
+    if (error) {
+      console.error("[sales:cancelSale:rpc]", {
+        saleId,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw new Error(error.message || "Não foi possível cancelar a venda.");
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    console.error("[sales:cancelSale:unknown]", error);
+    throw new Error("Não foi possível cancelar a venda. Tente novamente.");
   }
 }
 

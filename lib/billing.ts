@@ -1,11 +1,11 @@
-import { getSales } from "@/lib/sales";
+import { getActiveSales } from "@/lib/sales";
 import type { BestSellingProduct, BillingSummary, RevenueByChannel, Sale } from "@/lib/types";
 
 const dayInMs = 24 * 60 * 60 * 1000;
 const channels = ["WhatsApp", "Instagram", "Loja física", "Revendedor", "Outro"];
 
 export async function getBillingSummary(): Promise<BillingSummary> {
-  const sales = await getSales(2000);
+  const sales = await getActiveSales(2000);
   const now = new Date();
   const todayStart = startOfSaoPauloDay(now);
   const tomorrowStart = addDays(todayStart, 1);
@@ -28,7 +28,7 @@ export async function getBillingSummary(): Promise<BillingSummary> {
 }
 
 export async function getBestSellingProducts(): Promise<BestSellingProduct[]> {
-  return groupSalesByProduct(await getSales(2000));
+  return groupSalesByProduct(await getActiveSales(2000));
 }
 
 export async function getRevenueByChannel(): Promise<RevenueByChannel[]> {
@@ -38,7 +38,7 @@ export async function getRevenueByChannel(): Promise<RevenueByChannel[]> {
     grouped.set(channel, { channel, revenue: 0, salesCount: 0 });
   });
 
-  (await getSales(2000)).forEach((sale) => {
+  (await getActiveSales(2000)).forEach((sale) => {
     const channel = sale.sales_channel?.trim() || "Outro";
     const item = grouped.get(channel) ?? { channel, revenue: 0, salesCount: 0 };
 
@@ -51,7 +51,7 @@ export async function getRevenueByChannel(): Promise<RevenueByChannel[]> {
 }
 
 export async function getRecentSales(limit = 10): Promise<Sale[]> {
-  return getSales(limit);
+  return getActiveSales(limit);
 }
 
 function groupSalesByProduct(sales: Sale[]): BestSellingProduct[] {

@@ -65,7 +65,7 @@ function getInteger(formData: FormData, key: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function getMovementType(formData: FormData): Exclude<StockMovementType, "venda"> {
+function getMovementType(formData: FormData): Exclude<StockMovementType, "venda" | "cancelamento"> {
   const type = getString(formData, "type");
 
   if (type === "entrada" || type === "saida" || type === "ajuste") {

@@ -53,6 +53,10 @@ export type Sale = {
   customer_name: string | null;
   notes: string | null;
   created_by: string | null;
+  status?: "active" | "canceled";
+  canceled_at?: string | null;
+  canceled_by?: string | null;
+  cancel_reason?: string | null;
   created_at: string;
 };
 
@@ -66,7 +70,7 @@ export type SaleInput = {
   notes?: string | null;
 };
 
-export type StockMovementType = "entrada" | "saida" | "venda" | "ajuste";
+export type StockMovementType = "entrada" | "saida" | "venda" | "ajuste" | "cancelamento";
 
 export type StockMovement = {
   id: string;
@@ -85,7 +89,7 @@ export type StockMovement = {
 
 export type StockMovementInput = {
   product_id: string;
-  type: Exclude<StockMovementType, "venda">;
+  type: Exclude<StockMovementType, "venda" | "cancelamento">;
   quantity: number;
   reason?: string | null;
   notes?: string | null;

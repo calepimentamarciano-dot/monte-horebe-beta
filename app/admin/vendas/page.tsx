@@ -1,17 +1,20 @@
 import { Plus, Receipt, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { AdminHeader } from "@/components/admin/admin-header";
+import { CancelSaleForm } from "@/components/admin/cancel-sale-form";
 import { StatCard } from "@/components/admin/stat-card";
 import { getBillingSummary } from "@/lib/billing";
 import { getSales } from "@/lib/sales";
+import type { Sale } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 const dayInMs = 24 * 60 * 60 * 1000;
 
 export default async function SalesPage() {
   const [sales, summary] = await Promise.all([getSales(), getBillingSummary()]);
-  const todaySales = countSalesInRange(sales, startOfSaoPauloDay(new Date()), addDays(startOfSaoPauloDay(new Date()), 1));
-  const last7DaysSales = countSalesInRange(sales, addDays(startOfSaoPauloDay(new Date()), -6), addDays(startOfSaoPauloDay(new Date()), 1));
+  const activeSales = sales.filter((sale) => !isCanceledSale(sale));
+  const todaySales = countSalesInRange(activeSales, startOfSaoPauloDay(new Date()), addDays(startOfSaoPauloDay(new Date()), 1));
+  const last7DaysSales = countSalesInRange(activeSales, addDays(startOfSaoPauloDay(new Date()), -6), addDays(startOfSaoPauloDay(new Date()), 1));
 
   return (
     <>
@@ -41,7 +44,7 @@ export default async function SalesPage() {
           <h2 className="font-display text-3xl text-horebe-soft">Histórico de vendas</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-left text-sm">
+          <table className="w-full min-w-[1040px] text-left text-sm">
             <thead className="bg-white/[0.035] text-xs uppercase tracking-[0.16em] text-horebe-gray">
               <tr>
                 <th className="px-5 py-4">Data</th>
@@ -51,20 +54,45 @@ export default async function SalesPage() {
                 <th className="px-5 py-4">Canal</th>
                 <th className="px-5 py-4">Cliente</th>
                 <th className="px-5 py-4">Observação</th>
+                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {sales.map((sale) => (
-                <tr key={sale.id}>
-                  <td className="px-5 py-4 text-horebe-gray">{formatDate(sale.created_at)}</td>
-                  <td className="px-5 py-4 font-semibold text-horebe-soft">{sale.product_name}</td>
-                  <td className="px-5 py-4 text-horebe-gray">{sale.quantity}</td>
-                  <td className="px-5 py-4 text-horebe-soft">{formatCurrency(sale.total_value) ?? "R$ 0,00"}</td>
-                  <td className="px-5 py-4 text-horebe-gray">{sale.sales_channel ?? "Outro"}</td>
-                  <td className="px-5 py-4 text-horebe-gray">{sale.customer_name ?? "Não informado"}</td>
-                  <td className="px-5 py-4 text-horebe-gray">{sale.notes ?? "Sem observação"}</td>
-                </tr>
-              ))}
+              {sales.map((sale) => {
+                const isCanceled = isCanceledSale(sale);
+
+                return (
+                  <tr key={sale.id} className={isCanceled ? "opacity-55" : undefined}>
+                    <td className="px-5 py-4 text-horebe-gray">{formatDate(sale.created_at)}</td>
+                    <td className="px-5 py-4 font-semibold text-horebe-soft">{sale.product_name}</td>
+                    <td className="px-5 py-4 text-horebe-gray">{sale.quantity}</td>
+                    <td className="px-5 py-4 text-horebe-soft">
+                      <span className={isCanceled ? "line-through" : undefined}>
+                        {formatCurrency(sale.total_value) ?? "R$ 0,00"}
+                      </span>
+                      {isCanceled ? <span className="ml-2 text-xs text-red-100">Cancelada</span> : null}
+                    </td>
+                    <td className="px-5 py-4 text-horebe-gray">{sale.sales_channel ?? "Outro"}</td>
+                    <td className="px-5 py-4 text-horebe-gray">{sale.customer_name ?? "Não informado"}</td>
+                    <td className="px-5 py-4 text-horebe-gray">
+                      {isCanceled ? sale.cancel_reason ?? sale.notes ?? "Venda cancelada" : sale.notes ?? "Sem observação"}
+                    </td>
+                    <td className="px-5 py-4">
+                      <StatusBadge canceled={isCanceled} />
+                    </td>
+                    <td className="px-5 py-4">
+                      {isCanceled ? (
+                        <span className="rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-100">
+                          Cancelada
+                        </span>
+                      ) : (
+                        <CancelSaleForm saleId={sale.id} />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {sales.length === 0 ? (
@@ -74,6 +102,22 @@ export default async function SalesPage() {
       </section>
     </>
   );
+}
+
+function StatusBadge({ canceled }: { canceled: boolean }) {
+  return canceled ? (
+    <span className="rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-100">
+      Cancelada
+    </span>
+  ) : (
+    <span className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+      Ativa
+    </span>
+  );
+}
+
+function isCanceledSale(sale: Sale) {
+  return sale.status === "canceled";
 }
 
 function countSalesInRange(sales: { created_at: string }[], startDate: Date, endDate: Date) {

@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createSale } from "@/lib/sales";
+import { cancelSale, createSale } from "@/lib/sales";
 
 export type SaleActionState = {
   error?: string;
+  success?: string;
 };
 
 export async function createSaleAction(
@@ -26,6 +27,22 @@ export async function createSaleAction(
     revalidateSalesPaths();
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Não foi possível registrar a venda." };
+  }
+
+  redirect("/admin/vendas");
+}
+
+export async function cancelSaleAction(
+  _previousState: SaleActionState,
+  formData: FormData
+): Promise<SaleActionState> {
+  try {
+    await cancelSale(getString(formData, "sale_id"), getString(formData, "cancel_reason"));
+    revalidateSalesPaths();
+  } catch (error) {
+    console.error("[actions:cancelSaleAction]", error);
+    const message = error instanceof Error ? error.message : "Não foi possível cancelar a venda.";
+    return { error: `Erro ao cancelar venda: ${message}` };
   }
 
   redirect("/admin/vendas");

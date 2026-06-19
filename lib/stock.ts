@@ -166,7 +166,11 @@ export async function getStockMovements(limit = 80): Promise<StockMovement[]> {
   return data as StockMovement[];
 }
 
-function calculateNewStock(type: StockMovementType, previousStock: number, quantity: number) {
+function calculateNewStock(
+  type: Exclude<StockMovementType, "venda" | "cancelamento">,
+  previousStock: number,
+  quantity: number
+) {
   if (type === "entrada") {
     return previousStock + quantity;
   }
@@ -202,7 +206,8 @@ function movementLabel(type: StockMovementType) {
     entrada: "Entrada manual",
     saida: "Saída manual",
     venda: "Venda registrada",
-    ajuste: "Ajuste manual"
+    ajuste: "Ajuste manual",
+    cancelamento: "Cancelamento de venda"
   };
 
   return labels[type];

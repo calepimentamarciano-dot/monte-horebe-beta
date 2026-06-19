@@ -148,7 +148,7 @@ export function StockManager({ products, movements }: StockManagerProps) {
                   <td className="px-5 py-4 text-horebe-gray">{formatDate(movement.created_at)}</td>
                   <td className="px-5 py-4 font-semibold text-horebe-soft">{movement.product_name}</td>
                   <td className="px-5 py-4 text-horebe-gray">{movementLabel(movement.type)}</td>
-                  <td className="px-5 py-4 text-horebe-gray">{movement.quantity}</td>
+                  <td className="px-5 py-4 text-horebe-gray">{formatMovementQuantity(movement)}</td>
                   <td className="px-5 py-4 text-horebe-gray">{movement.previous_stock}</td>
                   <td className="px-5 py-4 text-horebe-gray">{movement.new_stock}</td>
                   <td className="px-5 py-4 text-horebe-gray">{movement.reason ?? "Sem motivo"}</td>
@@ -201,10 +201,23 @@ function movementLabel(type: StockMovement["type"]) {
     entrada: "Entrada",
     saida: "Saída",
     venda: "Venda",
-    ajuste: "Ajuste"
+    ajuste: "Ajuste",
+    cancelamento: "Cancelamento"
   };
 
   return labels[type];
+}
+
+function formatMovementQuantity(movement: StockMovement) {
+  if (movement.type === "entrada" || movement.type === "cancelamento") {
+    return `+${movement.quantity}`;
+  }
+
+  if (movement.type === "saida" || movement.type === "venda") {
+    return `-${movement.quantity}`;
+  }
+
+  return movement.quantity;
 }
 
 function formatDate(value: string) {
