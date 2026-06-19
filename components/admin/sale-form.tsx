@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Product } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { calculateMargin, calculateProfit, formatCurrency, formatMargin } from "@/lib/utils";
 
 type SaleFormProps = {
   products: Product[];
@@ -96,6 +96,10 @@ export function SaleForm({ products }: SaleFormProps) {
           {items.map((item, index) => {
             const selectedProduct = item.productId ? productMap.get(item.productId) ?? null : null;
             const subtotal = getItemSubtotal(item);
+            const unitCost = selectedProduct?.cost_price ?? 0;
+            const unitProfit = calculateProfit(item.unitPrice, unitCost);
+            const itemProfit = unitProfit * Math.max(item.quantity, 0);
+            const itemMargin = calculateMargin(item.unitPrice, unitCost);
 
             return (
               <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -155,9 +159,12 @@ export function SaleForm({ products }: SaleFormProps) {
                   </div>
                 </div>
 
-                <p className="mt-3 text-xs text-horebe-gray">
-                  Estoque disponivel: {selectedProduct?.stock_quantity ?? 0}
-                </p>
+                <div className="mt-3 grid gap-2 text-xs text-horebe-gray sm:grid-cols-4">
+                  <p>Estoque disponivel: {selectedProduct?.stock_quantity ?? 0}</p>
+                  <p>Custo unit.: {formatCurrency(unitCost) ?? "R$ 0,00"}</p>
+                  <p>Lucro item: {formatCurrency(itemProfit) ?? "R$ 0,00"}</p>
+                  <p>Margem: {formatMargin(itemMargin)}</p>
+                </div>
               </div>
             );
           })}

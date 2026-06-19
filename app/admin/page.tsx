@@ -45,7 +45,9 @@ export default async function AdminPage() {
         <StatCard label="Em destaque" value={featuredProducts} icon={Star} />
         <StatCard label="Categorias" value={categories.length} icon={FolderTree} />
         <StatCard label="Receita hoje" value={formatCurrency(billingSummary.todayRevenue) ?? "R$ 0,00"} icon={BadgeDollarSign} />
+        <StatCard label="Lucro hoje" value={formatCurrency(billingSummary.todayProfit) ?? "R$ 0,00"} icon={BadgeDollarSign} />
         <StatCard label="Receita do mês" value={formatCurrency(billingSummary.monthRevenue) ?? "R$ 0,00"} icon={BadgeDollarSign} />
+        <StatCard label="Lucro do mês" value={formatCurrency(billingSummary.monthProfit) ?? "R$ 0,00"} icon={BadgeDollarSign} />
         <StatCard label="Estoque baixo" value={lowStockProducts} icon={PackageCheck} />
         <StatCard label="Total de vendas" value={billingSummary.totalSales} icon={ReceiptText} />
       </div>

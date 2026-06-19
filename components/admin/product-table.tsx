@@ -12,7 +12,7 @@ import {
 } from "@/app/admin/produtos/actions";
 import { Button } from "@/components/ui/button";
 import type { Product } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { calculateMargin, calculateProfit, formatCurrency, formatMargin } from "@/lib/utils";
 
 type ProductTableProps = {
   products: Product[];
@@ -60,7 +60,7 @@ export function ProductTable({ products }: ProductTableProps) {
               <th className="px-5 py-4">Nome</th>
               <th className="px-5 py-4">Categoria</th>
               <th className="px-5 py-4">Torra</th>
-              <th className="px-5 py-4">Preço</th>
+              <th className="px-5 py-4">Comercial</th>
               <th className="px-5 py-4">Status</th>
               <th className="px-5 py-4">Destaque</th>
               <th className="px-5 py-4 text-right">Ações</th>
@@ -91,7 +91,9 @@ export function ProductTable({ products }: ProductTableProps) {
                 </td>
                 <td className="px-5 py-4 text-horebe-gray">{product.category?.name ?? "Sem categoria"}</td>
                 <td className="px-5 py-4 text-horebe-gray">{product.roast_level ?? "-"}</td>
-                <td className="px-5 py-4 text-horebe-gray">{formatCurrency(product.price) ?? "Sob consulta"}</td>
+                <td className="px-5 py-4 text-horebe-gray">
+                  <ProductProfitSummary product={product} />
+                </td>
                 <td className="px-5 py-4">
                   <button
                     type="button"
@@ -147,6 +149,21 @@ export function ProductTable({ products }: ProductTableProps) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function ProductProfitSummary({ product }: { product: Product }) {
+  const costPrice = product.cost_price ?? 0;
+  const unitProfit = calculateProfit(product.price, costPrice);
+  const margin = calculateMargin(product.price, costPrice);
+
+  return (
+    <div className="space-y-1">
+      <p>Venda: {formatCurrency(product.price) ?? "Sob consulta"}</p>
+      <p>Custo: {formatCurrency(costPrice) ?? "R$ 0,00"}</p>
+      <p>Lucro: {formatCurrency(unitProfit) ?? "R$ 0,00"}</p>
+      <p>Margem: {formatMargin(margin)}</p>
     </div>
   );
 }

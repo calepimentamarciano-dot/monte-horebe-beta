@@ -31,7 +31,8 @@ export async function saveProductAction(
       slug,
       short_description: getString(formData, "short_description") || null,
       description: getString(formData, "description") || null,
-      price: getNumber(formData, "price"),
+      price: getNonNegativeOptionalNumber(formData, "price", "O preço de venda não pode ser negativo."),
+      cost_price: getNonNegativeNumber(formData, "cost_price", "O preço de custo não pode ser negativo."),
       image_url: imageUrl,
       gallery: null,
       category_id: getString(formData, "category_id") || null,
@@ -42,8 +43,6 @@ export async function saveProductAction(
       score_sca: getNumber(formData, "score_sca"),
       sensory_notes: splitList(getString(formData, "sensory_notes")),
       recommended_methods: splitList(getString(formData, "recommended_methods")),
-      stock_quantity: getNonNegativeInteger(formData, "stock_quantity"),
-      min_stock: getNonNegativeInteger(formData, "min_stock"),
       is_featured: formData.get("is_featured") === "on",
       is_active: formData.get("is_active") === "on"
     };
@@ -63,7 +62,6 @@ export async function saveProductAction(
 }
 
 export async function deleteProductAction(id: string) {
-  // A remoção da imagem no Storage pode ser implementada depois, se necessário.
   await deleteProduct(id);
   revalidateProductPaths();
 }
@@ -83,6 +81,7 @@ function revalidateProductPaths() {
   revalidatePath("/catalogo");
   revalidatePath("/admin");
   revalidatePath("/admin/produtos");
+  revalidatePath("/admin/vendas/nova");
   revalidatePath("/sitemap.xml");
 }
 
@@ -96,16 +95,28 @@ function getNumber(formData: FormData, key: string) {
   return value ? Number(value) : null;
 }
 
-function getNonNegativeInteger(formData: FormData, key: string) {
-  const value = getString(formData, key);
+function getNonNegativeNumber(formData: FormData, key: string, errorMessage: string) {
+  const value = getString(formData, key).replace(",", ".");
   if (!value) return 0;
 
-  const parsed = Math.floor(Number(value.replace(",", ".")));
+  const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error("Os campos de estoque não podem ser negativos.");
+    throw new Error(errorMessage);
   }
 
-  return parsed;
+  return Math.round(parsed * 100) / 100;
+}
+
+function getNonNegativeOptionalNumber(formData: FormData, key: string, errorMessage: string) {
+  const value = getString(formData, key).replace(",", ".");
+  if (!value) return null;
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(errorMessage);
+  }
+
+  return Math.round(parsed * 100) / 100;
 }
 
 function splitList(value: string) {

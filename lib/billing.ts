@@ -15,14 +15,25 @@ export async function getBillingSummary(): Promise<BillingSummary> {
   const bestSellingProducts = groupSalesByProduct(sales);
 
   const totalRevenue = sumRevenue(sales);
+  const totalCost = sumCost(sales);
+  const grossProfit = sumProfit(sales);
   const totalSales = sales.length;
+  const todaySales = filterSalesByRange(sales, todayStart, tomorrowStart);
+  const last7DaysSales = filterSalesByRange(sales, last7DaysStart, tomorrowStart);
+  const monthSales = filterSalesByRange(sales, monthStart, nextMonthStart);
 
   return {
-    todayRevenue: sumRevenue(filterSalesByRange(sales, todayStart, tomorrowStart)),
-    last7DaysRevenue: sumRevenue(filterSalesByRange(sales, last7DaysStart, tomorrowStart)),
-    monthRevenue: sumRevenue(filterSalesByRange(sales, monthStart, nextMonthStart)),
+    todayRevenue: sumRevenue(todaySales),
+    last7DaysRevenue: sumRevenue(last7DaysSales),
+    monthRevenue: sumRevenue(monthSales),
+    todayProfit: sumProfit(todaySales),
+    last7DaysProfit: sumProfit(last7DaysSales),
+    monthProfit: sumProfit(monthSales),
+    totalCost,
+    grossProfit,
     totalSales,
     averageTicket: totalSales ? totalRevenue / totalSales : 0,
+    averageMargin: totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0,
     bestSellingProduct: bestSellingProducts[0]?.product_name ?? null
   };
 }
@@ -92,6 +103,9 @@ function getSaleItems(sale: Sale): SaleItem[] {
       quantity: sale.quantity,
       unit_price: sale.unit_price,
       subtotal: sale.total_value,
+      unit_cost: null,
+      total_cost: sale.total_cost ?? 0,
+      gross_profit: sale.gross_profit ?? 0,
       created_at: sale.created_at
     }
   ];
@@ -106,6 +120,30 @@ function filterSalesByRange(sales: Sale[], startDate: Date, endDate: Date) {
 
 function sumRevenue(sales: Sale[]) {
   return sales.reduce((total, sale) => total + toNumber(sale.total_value), 0);
+}
+
+function sumCost(sales: Sale[]) {
+  return sales.reduce((total, sale) => total + getSaleCost(sale), 0);
+}
+
+function sumProfit(sales: Sale[]) {
+  return sales.reduce((total, sale) => total + getSaleProfit(sale), 0);
+}
+
+function getSaleCost(sale: Sale) {
+  if (sale.total_cost !== null && sale.total_cost !== undefined) {
+    return toNumber(sale.total_cost);
+  }
+
+  return getSaleItems(sale).reduce((total, item) => total + toNumber(item.total_cost), 0);
+}
+
+function getSaleProfit(sale: Sale) {
+  if (sale.gross_profit !== null && sale.gross_profit !== undefined) {
+    return toNumber(sale.gross_profit);
+  }
+
+  return getSaleItems(sale).reduce((total, item) => total + toNumber(item.gross_profit), 0);
 }
 
 function toNumber(value: number | string | null | undefined) {

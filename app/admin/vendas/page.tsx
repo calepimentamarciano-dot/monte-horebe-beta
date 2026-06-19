@@ -6,7 +6,7 @@ import { StatCard } from "@/components/admin/stat-card";
 import { getBillingSummary } from "@/lib/billing";
 import { getSales } from "@/lib/sales";
 import type { Sale, SaleItem } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatMargin } from "@/lib/utils";
 
 const dayInMs = 24 * 60 * 60 * 1000;
 
@@ -20,7 +20,7 @@ export default async function SalesPage() {
     <>
       <AdminHeader
         title="Vendas"
-        description="Acompanhe as vendas lançadas e o impacto no estoque."
+        description="Acompanhe as vendas lancadas e o impacto no estoque."
         action={
           <Link
             href="/admin/vendas/nova"
@@ -35,27 +35,28 @@ export default async function SalesPage() {
       <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Vendas hoje" value={todaySales} icon={Receipt} />
         <StatCard label="Receita hoje" value={formatCurrency(summary.todayRevenue) ?? "R$ 0,00"} icon={TrendingUp} />
-        <StatCard label="Vendas nos últimos 7 dias" value={last7DaysSales} icon={Receipt} />
-        <StatCard label="Receita no mês" value={formatCurrency(summary.monthRevenue) ?? "R$ 0,00"} icon={TrendingUp} />
+        <StatCard label="Vendas ultimos 7 dias" value={last7DaysSales} icon={Receipt} />
+        <StatCard label="Lucro no mes" value={formatCurrency(summary.monthProfit) ?? "R$ 0,00"} icon={TrendingUp} />
       </div>
 
       <section className="glass-panel overflow-hidden rounded-2xl">
         <div className="border-b border-white/10 p-5">
-          <h2 className="font-display text-3xl text-horebe-soft">Histórico de vendas</h2>
+          <h2 className="font-display text-3xl text-horebe-soft">Historico de vendas</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] text-left text-sm">
+          <table className="w-full min-w-[1160px] text-left text-sm">
             <thead className="bg-white/[0.035] text-xs uppercase tracking-[0.16em] text-horebe-gray">
               <tr>
                 <th className="px-5 py-4">Data</th>
                 <th className="px-5 py-4">Itens</th>
                 <th className="px-5 py-4">Quantidade total</th>
                 <th className="px-5 py-4">Valor total</th>
+                <th className="px-5 py-4">Resultado</th>
                 <th className="px-5 py-4">Canal</th>
                 <th className="px-5 py-4">Cliente</th>
-                <th className="px-5 py-4">Observação</th>
+                <th className="px-5 py-4">Observacao</th>
                 <th className="px-5 py-4">Status</th>
-                <th className="px-5 py-4">Ações</th>
+                <th className="px-5 py-4">Acoes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
@@ -73,13 +74,15 @@ export default async function SalesPage() {
                           Ver itens
                         </summary>
                         <div className="mt-3 overflow-hidden rounded-xl border border-white/10">
-                          <table className="w-full text-left">
+                          <table className="w-full min-w-[620px] text-left">
                             <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.12em]">
                               <tr>
                                 <th className="px-3 py-2">Produto</th>
                                 <th className="px-3 py-2">Qtd.</th>
-                                <th className="px-3 py-2">Unit.</th>
+                                <th className="px-3 py-2">Venda unit.</th>
+                                <th className="px-3 py-2">Custo unit.</th>
                                 <th className="px-3 py-2">Subtotal</th>
+                                <th className="px-3 py-2">Lucro</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-white/10">
@@ -88,7 +91,9 @@ export default async function SalesPage() {
                                   <td className="px-3 py-2 text-horebe-soft">{item.product_name}</td>
                                   <td className="px-3 py-2">{item.quantity}</td>
                                   <td className="px-3 py-2">{formatCurrency(item.unit_price) ?? "R$ 0,00"}</td>
+                                  <td className="px-3 py-2">{formatCurrency(item.unit_cost ?? 0) ?? "R$ 0,00"}</td>
                                   <td className="px-3 py-2">{formatCurrency(item.subtotal) ?? "R$ 0,00"}</td>
+                                  <td className="px-3 py-2">{formatCurrency(item.gross_profit ?? 0) ?? "R$ 0,00"}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -103,10 +108,16 @@ export default async function SalesPage() {
                       </span>
                       {isCanceled ? <span className="ml-2 text-xs text-red-100">Cancelada</span> : null}
                     </td>
-                    <td className="px-5 py-4 text-horebe-gray">{sale.sales_channel ?? "Outro"}</td>
-                    <td className="px-5 py-4 text-horebe-gray">{sale.customer_name ?? "Não informado"}</td>
                     <td className="px-5 py-4 text-horebe-gray">
-                      {isCanceled ? sale.cancel_reason ?? sale.notes ?? "Venda cancelada" : sale.notes ?? "Sem observação"}
+                      <div>Custo: {formatCurrency(getSaleCost(sale)) ?? "R$ 0,00"}</div>
+                      <div className="text-horebe-soft">Lucro: {formatCurrency(getSaleProfit(sale)) ?? "R$ 0,00"}</div>
+                      <div>Margem: {formatMargin(getSaleMargin(sale))}</div>
+                      {isCanceled ? <div className="mt-1 text-xs text-red-100">Nao entra no faturamento</div> : null}
+                    </td>
+                    <td className="px-5 py-4 text-horebe-gray">{sale.sales_channel ?? "Outro"}</td>
+                    <td className="px-5 py-4 text-horebe-gray">{sale.customer_name ?? "Nao informado"}</td>
+                    <td className="px-5 py-4 text-horebe-gray">
+                      {isCanceled ? sale.cancel_reason ?? sale.notes ?? "Venda cancelada" : sale.notes ?? "Sem observacao"}
                     </td>
                     <td className="px-5 py-4">
                       <StatusBadge canceled={isCanceled} />
@@ -163,7 +174,10 @@ function getSaleItems(sale: Sale): SaleItem[] {
       product_name: sale.product_name,
       quantity: sale.quantity,
       unit_price: sale.unit_price,
+      unit_cost: null,
       subtotal: sale.total_value,
+      total_cost: sale.total_cost ?? 0,
+      gross_profit: sale.gross_profit ?? 0,
       created_at: sale.created_at
     }
   ];
@@ -183,6 +197,29 @@ function formatItemsSummary(items: SaleItem[]) {
 
 function getTotalQuantity(items: SaleItem[]) {
   return items.reduce((total, item) => total + item.quantity, 0);
+}
+
+function getSaleCost(sale: Sale) {
+  if (sale.total_cost !== null && sale.total_cost !== undefined) {
+    return Number(sale.total_cost) || 0;
+  }
+
+  return getSaleItems(sale).reduce((total, item) => total + (Number(item.total_cost) || 0), 0);
+}
+
+function getSaleProfit(sale: Sale) {
+  if (sale.gross_profit !== null && sale.gross_profit !== undefined) {
+    return Number(sale.gross_profit) || 0;
+  }
+
+  return getSaleItems(sale).reduce((total, item) => total + (Number(item.gross_profit) || 0), 0);
+}
+
+function getSaleMargin(sale: Sale) {
+  const revenue = Number(sale.total_value ?? 0);
+  if (revenue <= 0) return 0;
+
+  return (getSaleProfit(sale) / revenue) * 100;
 }
 
 function countSalesInRange(sales: { created_at: string }[], startDate: Date, endDate: Date) {

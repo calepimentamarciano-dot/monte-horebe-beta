@@ -12,6 +12,7 @@ export type Product = {
   short_description: string | null;
   description: string | null;
   price: number | null;
+  cost_price?: number | null;
   image_url: string | null;
   gallery: string[] | null;
   category_id: string | null;
@@ -49,6 +50,8 @@ export type Sale = {
   quantity: number;
   unit_price: number | null;
   total_value: number;
+  total_cost?: number | null;
+  gross_profit?: number | null;
   sales_channel: string | null;
   customer_name: string | null;
   notes: string | null;
@@ -68,7 +71,10 @@ export type SaleItem = {
   product_name: string;
   quantity: number;
   unit_price: number | null;
+  unit_cost?: number | null;
   subtotal: number;
+  total_cost?: number | null;
+  gross_profit?: number | null;
   created_at?: string;
 };
 
@@ -114,8 +120,14 @@ export type BillingSummary = {
   todayRevenue: number;
   last7DaysRevenue: number;
   monthRevenue: number;
+  todayProfit: number;
+  last7DaysProfit: number;
+  monthProfit: number;
+  totalCost: number;
+  grossProfit: number;
   totalSales: number;
   averageTicket: number;
+  averageMargin: number;
   bestSellingProduct: string | null;
 };
 
