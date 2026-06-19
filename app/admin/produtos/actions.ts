@@ -42,6 +42,8 @@ export async function saveProductAction(
       score_sca: getNumber(formData, "score_sca"),
       sensory_notes: splitList(getString(formData, "sensory_notes")),
       recommended_methods: splitList(getString(formData, "recommended_methods")),
+      stock_quantity: getNonNegativeInteger(formData, "stock_quantity"),
+      min_stock: getNonNegativeInteger(formData, "min_stock"),
       is_featured: formData.get("is_featured") === "on",
       is_active: formData.get("is_active") === "on"
     };
@@ -92,6 +94,18 @@ function getString(formData: FormData, key: string) {
 function getNumber(formData: FormData, key: string) {
   const value = getString(formData, key).replace(",", ".");
   return value ? Number(value) : null;
+}
+
+function getNonNegativeInteger(formData: FormData, key: string) {
+  const value = getString(formData, key);
+  if (!value) return 0;
+
+  const parsed = Math.floor(Number(value.replace(",", ".")));
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error("Os campos de estoque não podem ser negativos.");
+  }
+
+  return parsed;
 }
 
 function splitList(value: string) {

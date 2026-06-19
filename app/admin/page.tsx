@@ -1,27 +1,42 @@
-import { Boxes, Eye, FolderTree, Plus, Star } from "lucide-react";
+import { BadgeDollarSign, Boxes, Eye, FolderTree, PackageCheck, Plus, ReceiptText, Star } from "lucide-react";
 import Link from "next/link";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { StatCard } from "@/components/admin/stat-card";
+import { getBillingSummary } from "@/lib/billing";
 import { getAdminCategories } from "@/lib/categories";
 import { getAdminProducts } from "@/lib/products";
+import { getStockProducts } from "@/lib/stock";
+import { formatCurrency } from "@/lib/utils";
 
 const shortcuts = [
   { href: "/admin/produtos/novo", label: "Adicionar produto", icon: Plus },
   { href: "/admin/produtos", label: "Gerenciar produtos", icon: Boxes },
   { href: "/admin/categorias", label: "Gerenciar categorias", icon: FolderTree },
+  { href: "/admin/vendas/nova", label: "Registrar venda", icon: ReceiptText },
+  { href: "/admin/faturamento", label: "Ver faturamento", icon: BadgeDollarSign },
+  { href: "/admin/estoque", label: "Controlar estoque", icon: PackageCheck },
   { href: "/catalogo", label: "Ver catálogo público", icon: Eye }
 ];
 
 export default async function AdminPage() {
-  const [products, categories] = await Promise.all([getAdminProducts(), getAdminCategories()]);
+  const [products, categories, stockProducts, billingSummary] = await Promise.all([
+    getAdminProducts(),
+    getAdminCategories(),
+    getStockProducts(),
+    getBillingSummary()
+  ]);
   const activeProducts = products.filter((product) => product.is_active).length;
   const featuredProducts = products.filter((product) => product.is_featured).length;
+  const lowStockProducts = stockProducts.filter((product) => {
+    const stock = product.stock_quantity ?? 0;
+    return stock > 0 && stock <= (product.min_stock ?? 0);
+  }).length;
 
   return (
     <>
       <AdminHeader
         title="Dashboard"
-        description="Acompanhe o catálogo e acesse rapidamente as principais ações administrativas."
+        description="Acompanhe o catálogo, vendas, estoque e principais ações administrativas."
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -29,6 +44,10 @@ export default async function AdminPage() {
         <StatCard label="Produtos ativos" value={activeProducts} icon={Eye} />
         <StatCard label="Em destaque" value={featuredProducts} icon={Star} />
         <StatCard label="Categorias" value={categories.length} icon={FolderTree} />
+        <StatCard label="Receita hoje" value={formatCurrency(billingSummary.todayRevenue) ?? "R$ 0,00"} icon={BadgeDollarSign} />
+        <StatCard label="Receita do mês" value={formatCurrency(billingSummary.monthRevenue) ?? "R$ 0,00"} icon={BadgeDollarSign} />
+        <StatCard label="Estoque baixo" value={lowStockProducts} icon={PackageCheck} />
+        <StatCard label="Total de vendas" value={billingSummary.totalSales} icon={ReceiptText} />
       </div>
 
       <section className="mt-6">

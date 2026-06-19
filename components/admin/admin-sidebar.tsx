@@ -1,6 +1,17 @@
 "use client";
 
-import { Boxes, ExternalLink, FolderPlus, FolderTree, LayoutDashboard, LogOut, Plus } from "lucide-react";
+import {
+  BadgeDollarSign,
+  Boxes,
+  ExternalLink,
+  FolderPlus,
+  FolderTree,
+  LayoutDashboard,
+  LogOut,
+  PackageCheck,
+  Plus,
+  ReceiptText
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/logo";
@@ -12,6 +23,9 @@ const links = [
   { href: "/admin/produtos", label: "Produtos", icon: Boxes },
   { href: "/admin/produtos/novo", label: "Novo Produto", icon: Plus },
   { href: "/admin/categorias", label: "Categorias", icon: FolderTree },
+  { href: "/admin/estoque", label: "Estoque", icon: PackageCheck },
+  { href: "/admin/vendas", label: "Vendas", icon: ReceiptText },
+  { href: "/admin/faturamento", label: "Faturamento", icon: BadgeDollarSign },
   { href: "/catalogo", label: "Ver Site", icon: ExternalLink }
 ];
 
@@ -38,7 +52,10 @@ export function AdminSidebar() {
 
       <nav className="grid gap-2" aria-label="Administração">
         {links.map((item) => {
-          const active = pathname === item.href;
+          const active =
+            pathname === item.href ||
+            (item.href === "/admin/produtos" && pathname.includes("/admin/produtos/") && pathname.includes("/editar")) ||
+            (item.href === "/admin/vendas" && pathname.startsWith("/admin/vendas/"));
           const Icon = item.icon;
 
           return (

@@ -23,6 +23,8 @@ export type Product = {
   score_sca: number | null;
   sensory_notes: string[] | null;
   recommended_methods: string[] | null;
+  stock_quantity?: number;
+  min_stock?: number;
   is_featured: boolean;
   is_active: boolean;
   created_at?: string;
@@ -39,3 +41,74 @@ export type ProductMutationInput = Omit<
 >;
 
 export type CategoryMutationInput = Pick<Category, "name" | "slug">;
+
+export type Sale = {
+  id: string;
+  product_id: string | null;
+  product_name: string;
+  quantity: number;
+  unit_price: number | null;
+  total_value: number;
+  sales_channel: string | null;
+  customer_name: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type SaleInput = {
+  product_id: string;
+  quantity: number;
+  unit_price?: number | null;
+  total_value?: number | null;
+  sales_channel?: string | null;
+  customer_name?: string | null;
+  notes?: string | null;
+};
+
+export type StockMovementType = "entrada" | "saida" | "venda" | "ajuste";
+
+export type StockMovement = {
+  id: string;
+  product_id: string | null;
+  product_name: string;
+  type: StockMovementType;
+  quantity: number;
+  previous_stock: number;
+  new_stock: number;
+  reason: string | null;
+  notes: string | null;
+  sale_id: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type StockMovementInput = {
+  product_id: string;
+  type: Exclude<StockMovementType, "venda">;
+  quantity: number;
+  reason?: string | null;
+  notes?: string | null;
+};
+
+export type BillingSummary = {
+  todayRevenue: number;
+  last7DaysRevenue: number;
+  monthRevenue: number;
+  totalSales: number;
+  averageTicket: number;
+  bestSellingProduct: string | null;
+};
+
+export type BestSellingProduct = {
+  product_id: string | null;
+  product_name: string;
+  quantity: number;
+  revenue: number;
+};
+
+export type RevenueByChannel = {
+  channel: string;
+  revenue: number;
+  salesCount: number;
+};

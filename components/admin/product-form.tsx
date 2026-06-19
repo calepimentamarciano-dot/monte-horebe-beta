@@ -88,6 +88,22 @@ export function ProductForm({ categories, product }: ProductFormProps) {
           min="0"
           defaultValue={product?.price ?? ""}
         />
+        <Input
+          label="Estoque inicial"
+          name="stock_quantity"
+          type="number"
+          min="0"
+          step="1"
+          defaultValue={product?.stock_quantity ?? 0}
+        />
+        <Input
+          label="Estoque mínimo"
+          name="min_stock"
+          type="number"
+          min="0"
+          step="1"
+          defaultValue={product?.min_stock ?? 0}
+        />
         <Select label="Categoria" name="category_id" defaultValue={product?.category_id ?? ""}>
           <option value="">Sem categoria</option>
           {categories.map((category) => (

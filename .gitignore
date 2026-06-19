@@ -1,5 +1,6 @@
 .next
 .next-corrupt-*
+.next-font-failed-*
 node_modules
 .env
 .env.local

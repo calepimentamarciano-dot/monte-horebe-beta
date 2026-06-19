@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 type StatCardProps = {
   label: string;
-  value: number;
+  value: number | string;
   icon: LucideIcon;
 };
 
@@ -15,7 +15,7 @@ export function StatCard({ label, value, icon: Icon }: StatCardProps) {
           <Icon className="h-5 w-5" aria-hidden />
         </span>
       </div>
-      <p className="mt-4 font-display text-4xl text-horebe-soft">{value}</p>
+      <p className="mt-4 break-words font-display text-3xl leading-tight text-horebe-soft md:text-4xl">{value}</p>
     </div>
   );
 }
