@@ -1,7 +1,8 @@
 import { createClient, hasSupabaseServerEnv } from "@/lib/supabase/server";
-import type { Product, Sale, SaleInput } from "@/lib/types";
+import type { Sale, SaleInput } from "@/lib/types";
 
-const saleFriendlyError = "Não foi possível registrar a venda. Tente novamente.";
+const saleFriendlyError = "Nao foi possivel registrar a venda. Tente novamente.";
+const saleSelect = "*, items:sale_items(*)";
 
 export async function getSales(limit = 80): Promise<Sale[]> {
   if (!hasSupabaseServerEnv()) return [];
@@ -11,7 +12,7 @@ export async function getSales(limit = 80): Promise<Sale[]> {
 
   const { data, error } = await supabase
     .from("sales")
-    .select("*")
+    .select(saleSelect)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -31,7 +32,7 @@ export async function getActiveSales(limit = 2000): Promise<Sale[]> {
 
   const { data, error } = await supabase
     .from("sales")
-    .select("*")
+    .select(saleSelect)
     .eq("status", "active")
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -52,7 +53,7 @@ export async function getSalesByDateRange(startDate: Date, endDate: Date): Promi
 
   const { data, error } = await supabase
     .from("sales")
-    .select("*")
+    .select(saleSelect)
     .gte("created_at", startDate.toISOString())
     .lt("created_at", endDate.toISOString())
     .order("created_at", { ascending: false });
@@ -68,99 +69,38 @@ export async function getSalesByDateRange(startDate: Date, endDate: Date): Promi
 export async function createSale(input: SaleInput) {
   const supabase = await createClient();
   if (!supabase) {
-    throw new Error("Supabase não está configurado.");
+    throw new Error("Supabase nao esta configurado.");
   }
 
   try {
-    const quantity = toPositiveInteger(input.quantity);
-    if (!quantity) {
-      throw new Error("Informe uma quantidade válida para a venda.");
+    const items = input.items.map((item) => ({
+      product_id: cleanText(item.product_id),
+      quantity: toPositiveInteger(item.quantity),
+      unit_price: normalizeMoney(item.unit_price ?? null)
+    }));
+
+    if (!items.length || items.some((item) => !item.product_id || !item.quantity)) {
+      throw new Error("Informe ao menos um produto com quantidade valida para a venda.");
     }
 
-    const { data: product, error: productError } = await supabase
-      .from("products")
-      .select("id, name, price, stock_quantity")
-      .eq("id", input.product_id)
-      .maybeSingle();
-
-    if (productError) {
-      console.error("[sales:createSale:product]", productError);
-      throw new Error(saleFriendlyError);
-    }
-
-    if (!product) {
-      throw new Error("Produto não encontrado.");
-    }
-
-    const stockProduct = product as Pick<Product, "id" | "name" | "price" | "stock_quantity">;
-    const previousStock = Number(stockProduct.stock_quantity ?? 0);
-
-    if (previousStock < quantity) {
-      throw new Error("Estoque insuficiente para esta venda.");
-    }
-
-    const unitPrice = normalizeMoney(input.unit_price ?? stockProduct.price ?? null);
-    const totalValue = normalizeMoney(input.total_value ?? (unitPrice !== null ? unitPrice * quantity : null));
-
-    if (totalValue === null || totalValue < 0) {
-      throw new Error("Informe o valor total da venda.");
-    }
-
-    const { data: userData } = await supabase.auth.getUser();
-    const createdBy = userData.user?.id ?? null;
-    const newStock = previousStock - quantity;
-
-    const { data: sale, error: saleError } = await supabase
-      .from("sales")
-      .insert({
-        product_id: stockProduct.id,
-        product_name: stockProduct.name,
-        quantity,
-        unit_price: unitPrice,
-        total_value: totalValue,
-        sales_channel: cleanText(input.sales_channel),
-        customer_name: cleanText(input.customer_name),
-        notes: cleanText(input.notes),
-        status: "active",
-        created_by: createdBy
-      })
-      .select("*")
-      .single();
-
-    if (saleError || !sale) {
-      console.error("[sales:createSale:sale]", saleError);
-      throw new Error(saleFriendlyError);
-    }
-
-    const { error: stockError } = await supabase
-      .from("products")
-      .update({ stock_quantity: newStock })
-      .eq("id", stockProduct.id);
-
-    if (stockError) {
-      console.error("[sales:createSale:stock]", stockError);
-      throw new Error("A venda foi criada, mas não foi possível atualizar o estoque.");
-    }
-
-    const { error: movementError } = await supabase.from("stock_movements").insert({
-      product_id: stockProduct.id,
-      product_name: stockProduct.name,
-      type: "venda",
-      quantity,
-      previous_stock: previousStock,
-      new_stock: newStock,
-      reason: "Venda registrada",
-      notes: cleanText(input.notes),
-      sale_id: (sale as Sale).id,
-      created_by: createdBy
+    const { data: saleId, error } = await supabase.rpc("create_multi_item_sale", {
+      p_items: items,
+      p_sales_channel: cleanText(input.sales_channel),
+      p_customer_name: cleanText(input.customer_name),
+      p_notes: cleanText(input.notes)
     });
 
-    if (movementError) {
-      console.error("[sales:createSale:movement]", movementError);
-      throw new Error("A venda foi criada, mas não foi possível registrar a movimentação de estoque.");
+    if (error || !saleId) {
+      console.error("[sales:createSale:rpc]", {
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code
+      });
+      throw new Error(error?.message || saleFriendlyError);
     }
 
-    return sale as Sale;
+    return saleId as string;
   } catch (error) {
     if (error instanceof Error) {
       throw error;
@@ -174,7 +114,7 @@ export async function createSale(input: SaleInput) {
 export async function cancelSale(saleId: string, reason?: string) {
   const supabase = await createClient();
   if (!supabase) {
-    throw new Error("Supabase não está configurado.");
+    throw new Error("Supabase nao esta configurado.");
   }
 
   try {
@@ -191,7 +131,7 @@ export async function cancelSale(saleId: string, reason?: string) {
         hint: error.hint,
         code: error.code
       });
-      throw new Error(error.message || "Não foi possível cancelar a venda.");
+      throw new Error(error.message || "Nao foi possivel cancelar a venda.");
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -199,7 +139,7 @@ export async function cancelSale(saleId: string, reason?: string) {
     }
 
     console.error("[sales:cancelSale:unknown]", error);
-    throw new Error("Não foi possível cancelar a venda. Tente novamente.");
+    throw new Error("Nao foi possivel cancelar a venda. Tente novamente.");
   }
 }
 

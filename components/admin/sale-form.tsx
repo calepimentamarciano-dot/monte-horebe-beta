@@ -1,8 +1,8 @@
 "use client";
 
-import { Save } from "lucide-react";
+import { Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { createSaleAction, type SaleActionState } from "@/app/admin/vendas/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,85 +15,60 @@ type SaleFormProps = {
   products: Product[];
 };
 
+type SaleFormItem = {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPrice: string;
+};
+
 const initialState: SaleActionState = {};
 
 export function SaleForm({ products }: SaleFormProps) {
   const [state, formAction, pending] = useActionState(createSaleAction, initialState);
-  const [productId, setProductId] = useState(products[0]?.id ?? "");
-  const [quantity, setQuantity] = useState(1);
-  const [unitPrice, setUnitPrice] = useState(products[0]?.price?.toString() ?? "");
-  const [manualTotal, setManualTotal] = useState("");
+  const [items, setItems] = useState<SaleFormItem[]>([createEmptyItem()]);
+  const productMap = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
+  const stockWarnings = useMemo(() => getStockWarnings(items, productMap), [items, productMap]);
+  const validItems = items.filter((item) => item.productId && item.quantity > 0);
+  const totalQuantity = validItems.reduce((total, item) => total + item.quantity, 0);
+  const totalValue = validItems.reduce((total, item) => total + getItemSubtotal(item), 0);
+  const hasInvalidItem = items.some((item) => item.productId && item.quantity <= 0);
+  const hasStockWarning = stockWarnings.length > 0;
+  const canSubmit = products.length > 0 && validItems.length > 0 && !hasInvalidItem && !hasStockWarning;
 
-  const selectedProduct = useMemo(
-    () => products.find((product) => product.id === productId) ?? null,
-    [productId, products]
-  );
-  const stockQuantity = selectedProduct?.stock_quantity ?? 0;
-  const parsedUnitPrice = Number(unitPrice.replace(",", "."));
-  const hasUnitPrice = Number.isFinite(parsedUnitPrice) && unitPrice.trim() !== "";
-  const calculatedTotal = hasUnitPrice ? Math.max(quantity, 0) * parsedUnitPrice : Number(manualTotal.replace(",", "."));
-  const insufficientStock = Boolean(selectedProduct && quantity > stockQuantity);
-  const totalValue = Number.isFinite(calculatedTotal) ? calculatedTotal : 0;
+  function updateItem(id: string, changes: Partial<SaleFormItem>) {
+    setItems((currentItems) =>
+      currentItems.map((item) => {
+        if (item.id !== id) return item;
 
-  useEffect(() => {
-    setUnitPrice(selectedProduct?.price?.toString() ?? "");
-    setManualTotal("");
-  }, [selectedProduct]);
+        const nextItem = { ...item, ...changes };
+        if (changes.productId) {
+          nextItem.unitPrice = productMap.get(changes.productId)?.price?.toString() ?? "";
+          nextItem.quantity = Math.max(nextItem.quantity || 1, 1);
+        }
+
+        return nextItem;
+      })
+    );
+  }
+
+  function addItem() {
+    setItems((currentItems) => [...currentItems, createEmptyItem()]);
+  }
+
+  function removeItem(id: string) {
+    setItems((currentItems) =>
+      currentItems.length === 1 ? [createEmptyItem()] : currentItems.filter((item) => item.id !== id)
+    );
+  }
 
   return (
     <form action={formAction} className="glass-panel rounded-2xl p-5">
       <div className="grid gap-4 md:grid-cols-2">
-        <Select
-          label="Produto vendido"
-          name="product_id"
-          value={productId}
-          onChange={(event) => setProductId(event.target.value)}
-          required
-        >
-          {products.length ? null : <option value="">Nenhum produto disponível</option>}
-          {products.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.name} - estoque {product.stock_quantity ?? 0}
-            </option>
-          ))}
-        </Select>
-
-        <Input
-          label="Quantidade vendida"
-          name="quantity"
-          type="number"
-          min="1"
-          value={quantity}
-          onChange={(event) => setQuantity(Number(event.target.value))}
-          required
-        />
-
-        <Input
-          label="Preço unitário"
-          name="unit_price"
-          type="number"
-          step="0.01"
-          min="0"
-          value={unitPrice}
-          onChange={(event) => setUnitPrice(event.target.value)}
-        />
-
-        <Input
-          label="Valor total"
-          name="total_value"
-          type="number"
-          step="0.01"
-          min="0"
-          value={hasUnitPrice ? totalValue.toFixed(2) : manualTotal}
-          onChange={(event) => setManualTotal(event.target.value)}
-          readOnly={hasUnitPrice}
-          required={!hasUnitPrice}
-        />
-
         <Select label="Canal da venda" name="sales_channel" defaultValue="WhatsApp">
           <option value="WhatsApp">WhatsApp</option>
           <option value="Instagram">Instagram</option>
-          <option value="Loja física">Loja física</option>
+          <option value="Loja fisica">Loja fisica</option>
           <option value="Revendedor">Revendedor</option>
           <option value="Outro">Outro</option>
         </Select>
@@ -101,35 +76,120 @@ export function SaleForm({ products }: SaleFormProps) {
         <Input label="Nome do cliente" name="customer_name" placeholder="Opcional" />
       </div>
 
+      <div className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+        <div className="flex flex-col gap-3 border-b border-white/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.16em] text-horebe-gray">Produtos da venda</p>
+            <p className="mt-1 text-sm text-horebe-soft">Adicione um ou mais produtos no mesmo atendimento.</p>
+          </div>
+          <button
+            type="button"
+            onClick={addItem}
+            className="focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-horebe-gold/45 px-4 py-2 text-sm font-semibold text-horebe-gold hover:bg-horebe-gold hover:text-horebe-black"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Adicionar produto
+          </button>
+        </div>
+
+        <div className="grid gap-4 p-4">
+          {items.map((item, index) => {
+            const selectedProduct = item.productId ? productMap.get(item.productId) ?? null : null;
+            const subtotal = getItemSubtotal(item);
+
+            return (
+              <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-horebe-soft">Item {index + 1}</p>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    className="focus-ring inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-horebe-gray hover:border-red-400/40 hover:text-red-100"
+                    aria-label="Remover produto"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  </button>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_120px_140px_140px]">
+                  <Select
+                    label="Produto"
+                    name="product_id"
+                    value={item.productId}
+                    onChange={(event) => updateItem(item.id, { productId: event.target.value })}
+                  >
+                    <option value="">Selecione</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name} - estoque {product.stock_quantity ?? 0}
+                      </option>
+                    ))}
+                  </Select>
+
+                  <Input
+                    label="Qtd."
+                    name="quantity"
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={(event) => updateItem(item.id, { quantity: Number(event.target.value) })}
+                    required={Boolean(item.productId)}
+                  />
+
+                  <Input
+                    label="Preco unit."
+                    name="unit_price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={item.unitPrice}
+                    onChange={(event) => updateItem(item.id, { unitPrice: event.target.value })}
+                    required={Boolean(item.productId)}
+                  />
+
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-horebe-gray">Subtotal</p>
+                    <div className="flex h-12 items-center rounded-xl border border-white/10 bg-black/25 px-4 font-semibold text-horebe-soft">
+                      {formatCurrency(subtotal) ?? "R$ 0,00"}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-xs text-horebe-gray">
+                  Estoque disponivel: {selectedProduct?.stock_quantity ?? 0}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="mt-4">
-        <Textarea label="Observação" name="notes" rows={4} placeholder="Opcional" />
+        <Textarea label="Observacao" name="notes" rows={4} placeholder="Opcional" />
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-          <p className="text-xs uppercase tracking-[0.16em] text-horebe-gray">Estoque disponível</p>
-          <p className="mt-2 font-display text-3xl text-horebe-soft">{stockQuantity}</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-          <p className="text-xs uppercase tracking-[0.16em] text-horebe-gray">Total calculado</p>
-          <p className="mt-2 font-display text-3xl text-horebe-soft">{formatCurrency(totalValue) ?? "R$ 0,00"}</p>
-        </div>
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <SummaryCard label="Itens vendidos" value={totalQuantity.toString()} />
+        <SummaryCard label="Total calculado" value={formatCurrency(totalValue) ?? "R$ 0,00"} />
+        <SummaryCard label="Estoque" value={hasStockWarning ? "Revise" : "Validado"} />
       </div>
 
-      {insufficientStock ? (
-        <div className="mt-5 rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-          Quantidade maior que o estoque disponível.
-        </div>
+      {products.length === 0 ? (
+        <Message tone="warning">Cadastre produtos ativos antes de registrar vendas.</Message>
       ) : null}
 
-      {state.error ? (
-        <div className="mt-5 rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-          {state.error}
-        </div>
-      ) : null}
+      {stockWarnings.map((warning) => (
+        <Message key={warning} tone="danger">
+          {warning}
+        </Message>
+      ))}
+
+      {hasInvalidItem ? <Message tone="danger">Revise as quantidades informadas.</Message> : null}
+
+      {state.error ? <Message tone="danger">{state.error}</Message> : null}
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <Button type="submit" disabled={pending || insufficientStock || !selectedProduct}>
+        <Button type="submit" disabled={pending || !canSubmit}>
           <Save className="h-4 w-4" aria-hidden />
           {pending ? "Registrando..." : "Registrar venda"}
         </Button>
@@ -142,4 +202,58 @@ export function SaleForm({ products }: SaleFormProps) {
       </div>
     </form>
   );
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+      <p className="text-xs uppercase tracking-[0.16em] text-horebe-gray">{label}</p>
+      <p className="mt-2 font-display text-3xl text-horebe-soft">{value}</p>
+    </div>
+  );
+}
+
+function Message({ children, tone }: { children: React.ReactNode; tone: "danger" | "warning" }) {
+  const className =
+    tone === "danger"
+      ? "border-red-400/25 bg-red-500/10 text-red-100"
+      : "border-horebe-gold/30 bg-horebe-gold/10 text-horebe-soft";
+
+  return <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm ${className}`}>{children}</div>;
+}
+
+function getItemSubtotal(item: SaleFormItem) {
+  const unitPrice = Number(item.unitPrice.replace(",", "."));
+  if (!Number.isFinite(unitPrice) || unitPrice < 0 || item.quantity <= 0) return 0;
+
+  return unitPrice * item.quantity;
+}
+
+function getStockWarnings(items: SaleFormItem[], productMap: Map<string, Product>) {
+  const quantityByProduct = new Map<string, number>();
+
+  items.forEach((item) => {
+    if (!item.productId || item.quantity <= 0) return;
+    quantityByProduct.set(item.productId, (quantityByProduct.get(item.productId) ?? 0) + item.quantity);
+  });
+
+  return [...quantityByProduct.entries()]
+    .map(([productId, quantity]) => {
+      const product = productMap.get(productId);
+      const stock = product?.stock_quantity ?? 0;
+
+      if (!product || quantity <= stock) return null;
+
+      return `${product.name}: estoque disponivel ${stock}, solicitado ${quantity}.`;
+    })
+    .filter((warning): warning is string => Boolean(warning));
+}
+
+function createEmptyItem(): SaleFormItem {
+  return {
+    id: crypto.randomUUID(),
+    productId: "",
+    quantity: 1,
+    unitPrice: ""
+  };
 }

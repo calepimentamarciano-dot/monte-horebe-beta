@@ -58,13 +58,28 @@ export type Sale = {
   canceled_by?: string | null;
   cancel_reason?: string | null;
   created_at: string;
+  items?: SaleItem[];
 };
 
-export type SaleInput = {
+export type SaleItem = {
+  id: string;
+  sale_id: string;
+  product_id: string | null;
+  product_name: string;
+  quantity: number;
+  unit_price: number | null;
+  subtotal: number;
+  created_at?: string;
+};
+
+export type SaleItemInput = {
   product_id: string;
   quantity: number;
   unit_price?: number | null;
-  total_value?: number | null;
+};
+
+export type SaleInput = {
+  items: SaleItemInput[];
   sales_channel?: string | null;
   customer_name?: string | null;
   notes?: string | null;

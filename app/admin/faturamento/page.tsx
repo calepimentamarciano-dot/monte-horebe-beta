@@ -2,6 +2,7 @@ import { BadgeDollarSign, BarChart3, Receipt, ShoppingBag, Star, Wallet } from "
 import { AdminHeader } from "@/components/admin/admin-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { getBestSellingProducts, getBillingSummary, getRecentSales, getRevenueByChannel } from "@/lib/billing";
+import type { Sale, SaleItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 export default async function BillingPage() {
@@ -46,8 +47,8 @@ export default async function BillingPage() {
                 {recentSales.map((sale) => (
                   <tr key={sale.id}>
                     <td className="px-5 py-4 text-horebe-gray">{formatDate(sale.created_at)}</td>
-                    <td className="px-5 py-4 font-semibold text-horebe-soft">{sale.product_name}</td>
-                    <td className="px-5 py-4 text-horebe-gray">{sale.quantity}</td>
+                    <td className="px-5 py-4 font-semibold text-horebe-soft">{formatItemsSummary(getSaleItems(sale))}</td>
+                    <td className="px-5 py-4 text-horebe-gray">{getTotalQuantity(getSaleItems(sale))}</td>
                     <td className="px-5 py-4 text-horebe-soft">{formatCurrency(sale.total_value) ?? "R$ 0,00"}</td>
                     <td className="px-5 py-4 text-horebe-gray">{sale.sales_channel ?? "Outro"}</td>
                   </tr>
@@ -101,6 +102,36 @@ function TableTitle({ title }: { title: string }) {
 
 function EmptyState({ text }: { text: string }) {
   return <p className="p-5 text-sm text-horebe-gray">{text}</p>;
+}
+
+function getSaleItems(sale: Sale): SaleItem[] {
+  if (sale.items?.length) {
+    return sale.items;
+  }
+
+  return [
+    {
+      id: sale.id,
+      sale_id: sale.id,
+      product_id: sale.product_id,
+      product_name: sale.product_name,
+      quantity: sale.quantity,
+      unit_price: sale.unit_price,
+      subtotal: sale.total_value,
+      created_at: sale.created_at
+    }
+  ];
+}
+
+function formatItemsSummary(items: SaleItem[]) {
+  if (items.length === 0) return "Sem itens";
+  if (items.length === 1) return items[0].product_name;
+
+  return `${items[0].product_name} + ${items.length - 1} item(ns)`;
+}
+
+function getTotalQuantity(items: SaleItem[]) {
+  return items.reduce((total, item) => total + item.quantity, 0);
 }
 
 function formatDate(value: string) {

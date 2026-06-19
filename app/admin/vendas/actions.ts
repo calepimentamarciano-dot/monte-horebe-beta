@@ -15,10 +15,7 @@ export async function createSaleAction(
 ): Promise<SaleActionState> {
   try {
     await createSale({
-      product_id: getString(formData, "product_id"),
-      quantity: getInteger(formData, "quantity"),
-      unit_price: getOptionalNumber(formData, "unit_price"),
-      total_value: getOptionalNumber(formData, "total_value"),
+      items: getSaleItems(formData),
       sales_channel: getString(formData, "sales_channel") || null,
       customer_name: getString(formData, "customer_name") || null,
       notes: getString(formData, "notes") || null
@@ -62,15 +59,35 @@ function getString(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function getInteger(formData: FormData, key: string) {
-  const parsed = Math.floor(Number(getString(formData, key).replace(",", ".")));
+function getSaleItems(formData: FormData) {
+  const productIds = getAllStrings(formData, "product_id");
+  const quantities = getAllStrings(formData, "quantity");
+  const unitPrices = getAllStrings(formData, "unit_price");
+
+  return productIds
+    .map((productId, index) => ({
+      product_id: productId,
+      quantity: toInteger(quantities[index]),
+      unit_price: toOptionalNumber(unitPrices[index])
+    }))
+    .filter((item) => item.product_id);
+}
+
+function getAllStrings(formData: FormData, key: string) {
+  return formData
+    .getAll(key)
+    .map((value) => (typeof value === "string" ? value.trim() : ""));
+}
+
+function toInteger(value?: string) {
+  const parsed = Math.floor(Number((value ?? "").replace(",", ".")));
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function getOptionalNumber(formData: FormData, key: string) {
-  const value = getString(formData, key).replace(",", ".");
-  if (!value) return null;
+function toOptionalNumber(value?: string) {
+  const normalizedValue = (value ?? "").replace(",", ".");
+  if (!normalizedValue) return null;
 
-  const parsed = Number(value);
+  const parsed = Number(normalizedValue);
   return Number.isFinite(parsed) ? parsed : null;
 }

@@ -29,7 +29,7 @@ Clientes não precisam de login para ver catálogo, acessar produtos ou chamar n
 - `/admin/categorias` Cria, edita e exclui categorias.
 - `/admin/estoque` Controla estoque atual, estoque mínimo e movimentações.
 - `/admin/vendas` Lista vendas registradas.
-- `/admin/vendas/nova` Lança venda manual e baixa estoque automaticamente.
+- `/admin/vendas/nova` Lança venda manual com um ou mais produtos e baixa estoque automaticamente.
 - `/admin/faturamento` Mostra resumo financeiro por período, produto e canal.
 
 Se alguém acessar `/admin` sem sessão ativa, o app redireciona para `/login`.
@@ -68,12 +68,14 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 4. Rode a migration em `supabase/migrations/202606120001_initial_schema.sql`.
 5. Rode a migration em `supabase/migrations/202606150001_stock_sales_billing.sql`.
 6. Rode a migration em `supabase/migrations/202606180001_cancel_sales.sql`.
-7. Crie um usuário admin no Supabase Auth.
-8. Confirme que o bucket `products` existe em Storage e está público.
-9. Rode o projeto localmente com `npm run dev`.
-10. Acesse `/login`.
-11. Cadastre produtos no painel.
-12. Veja os produtos ativos no catálogo público.
+7. Rode a migration em `supabase/migrations/202606180002_fix_cancel_sales.sql`.
+8. Rode a migration em `supabase/migrations/202606190001_multi_item_sales.sql`.
+9. Crie um usuário admin no Supabase Auth.
+10. Confirme que o bucket `products` existe em Storage e está público.
+11. Rode o projeto localmente com `npm run dev`.
+12. Acesse `/login`.
+13. Cadastre produtos no painel.
+14. Veja os produtos ativos no catálogo público.
 
 A migration cria:
 
@@ -101,14 +103,22 @@ A migration de cancelamento de vendas adiciona:
 - índice para `sales.status`
 - RPC `public.cancel_sale`, usada para cancelar venda e devolver estoque em uma transação.
 
+A migration de vendas com múltiplos itens adiciona:
+
+- `sale_items`
+- políticas RLS autenticadas para itens da venda
+- RPC `public.create_multi_item_sale`, usada para criar uma venda com vários produtos, baixar estoque e registrar movimentações em uma transação.
+- compatibilidade com vendas antigas salvas diretamente em `sales.product_id`, `sales.product_name`, `sales.quantity`, `sales.unit_price` e `sales.total_value`.
+- atualiza `public.cancel_sale` para devolver estoque item por item quando houver `sale_items`, mantendo fallback para vendas antigas.
+
 ## Estoque, Vendas e Faturamento
 
 - Configure produtos com estoque inicial e estoque mínimo no formulário de produto.
 - Use `/admin/estoque` para ajustar saldo, registrar entrada, saída ou ajuste e ver o histórico de movimentações.
-- Use `/admin/vendas/nova` para lançar uma venda manual. Ao salvar, o sistema cria o registro em `sales`, diminui `products.stock_quantity` e registra uma movimentação `venda` em `stock_movements`.
+- Use `/admin/vendas/nova` para lançar uma venda manual com um ou mais produtos. Ao salvar, o sistema cria o cabeçalho em `sales`, grava os produtos em `sale_items`, diminui `products.stock_quantity` e registra movimentações `venda` em `stock_movements`.
 - Use `/admin/vendas` para cancelar uma venda lançada errada. Vendas não são apagadas: elas ficam com status `canceled`, preservando o histórico para auditoria.
-- Ao cancelar uma venda, o estoque é devolvido automaticamente e uma movimentação `cancelamento` é registrada em `stock_movements`.
-- Vendas canceladas não contam no faturamento, nos cards de receita, no total de vendas, no ticket médio nem nos produtos mais vendidos.
+- Ao cancelar uma venda, o estoque é devolvido automaticamente para cada item e uma movimentação `cancelamento` é registrada em `stock_movements`.
+- Vendas canceladas não contam no faturamento, nos cards de receita, no total de vendas, no ticket médio nem nos produtos mais vendidos. O ranking de produtos usa `sale_items` para vendas novas e mantém fallback para vendas antigas.
 - Use `/admin/faturamento` para ver faturamento de hoje, últimos 7 dias, mês atual, total de vendas, ticket médio, produto mais vendido, vendas recentes, produtos mais vendidos e receita por canal.
 - Se uma venda tiver quantidade maior que o estoque disponível, ela não é salva e o estoque não é alterado.
 
@@ -117,6 +127,7 @@ Checklist antes do deploy:
 - Rodar a migration nova no Supabase.
 - Rodar a migration de cancelamento de vendas no Supabase.
 - Rodar a migration corretiva `202606180002_fix_cancel_sales.sql` no Supabase.
+- Rodar a migration de vendas com múltiplos itens `202606190001_multi_item_sales.sql` no Supabase.
 - Conferir RLS.
 - Fazer deploy na Vercel.
 - Testar `/admin/vendas/nova`.

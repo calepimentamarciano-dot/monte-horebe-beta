@@ -1,5 +1,5 @@
 import { getActiveSales } from "@/lib/sales";
-import type { BestSellingProduct, BillingSummary, RevenueByChannel, Sale } from "@/lib/types";
+import type { BestSellingProduct, BillingSummary, RevenueByChannel, Sale, SaleItem } from "@/lib/types";
 
 const dayInMs = 24 * 60 * 60 * 1000;
 const channels = ["WhatsApp", "Instagram", "Loja física", "Revendedor", "Outro"];
@@ -58,22 +58,43 @@ function groupSalesByProduct(sales: Sale[]): BestSellingProduct[] {
   const grouped = new Map<string, BestSellingProduct>();
 
   sales.forEach((sale) => {
-    const key = sale.product_id ?? sale.product_name;
-    const current =
-      grouped.get(key) ??
-      ({
-        product_id: sale.product_id,
-        product_name: sale.product_name,
-        quantity: 0,
-        revenue: 0
-      } satisfies BestSellingProduct);
+    getSaleItems(sale).forEach((item) => {
+      const key = item.product_id ?? item.product_name;
+      const current =
+        grouped.get(key) ??
+        ({
+          product_id: item.product_id,
+          product_name: item.product_name,
+          quantity: 0,
+          revenue: 0
+        } satisfies BestSellingProduct);
 
-    current.quantity += sale.quantity;
-    current.revenue += toNumber(sale.total_value);
-    grouped.set(key, current);
+      current.quantity += item.quantity;
+      current.revenue += toNumber(item.subtotal);
+      grouped.set(key, current);
+    });
   });
 
   return [...grouped.values()].sort((a, b) => b.quantity - a.quantity);
+}
+
+function getSaleItems(sale: Sale): SaleItem[] {
+  if (sale.items?.length) {
+    return sale.items;
+  }
+
+  return [
+    {
+      id: sale.id,
+      sale_id: sale.id,
+      product_id: sale.product_id,
+      product_name: sale.product_name,
+      quantity: sale.quantity,
+      unit_price: sale.unit_price,
+      subtotal: sale.total_value,
+      created_at: sale.created_at
+    }
+  ];
 }
 
 function filterSalesByRange(sales: Sale[], startDate: Date, endDate: Date) {

@@ -5,7 +5,7 @@ import { CancelSaleForm } from "@/components/admin/cancel-sale-form";
 import { StatCard } from "@/components/admin/stat-card";
 import { getBillingSummary } from "@/lib/billing";
 import { getSales } from "@/lib/sales";
-import type { Sale } from "@/lib/types";
+import type { Sale, SaleItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 const dayInMs = 24 * 60 * 60 * 1000;
@@ -48,8 +48,8 @@ export default async function SalesPage() {
             <thead className="bg-white/[0.035] text-xs uppercase tracking-[0.16em] text-horebe-gray">
               <tr>
                 <th className="px-5 py-4">Data</th>
-                <th className="px-5 py-4">Produto</th>
-                <th className="px-5 py-4">Quantidade</th>
+                <th className="px-5 py-4">Itens</th>
+                <th className="px-5 py-4">Quantidade total</th>
                 <th className="px-5 py-4">Valor total</th>
                 <th className="px-5 py-4">Canal</th>
                 <th className="px-5 py-4">Cliente</th>
@@ -61,12 +61,42 @@ export default async function SalesPage() {
             <tbody className="divide-y divide-white/10">
               {sales.map((sale) => {
                 const isCanceled = isCanceledSale(sale);
+                const saleItems = getSaleItems(sale);
 
                 return (
                   <tr key={sale.id} className={isCanceled ? "opacity-55" : undefined}>
                     <td className="px-5 py-4 text-horebe-gray">{formatDate(sale.created_at)}</td>
-                    <td className="px-5 py-4 font-semibold text-horebe-soft">{sale.product_name}</td>
-                    <td className="px-5 py-4 text-horebe-gray">{sale.quantity}</td>
+                    <td className="px-5 py-4">
+                      <div className="font-semibold text-horebe-soft">{formatItemsSummary(saleItems)}</div>
+                      <details className="mt-2 text-xs text-horebe-gray">
+                        <summary className="cursor-pointer text-horebe-gold hover:text-horebe-soft">
+                          Ver itens
+                        </summary>
+                        <div className="mt-3 overflow-hidden rounded-xl border border-white/10">
+                          <table className="w-full text-left">
+                            <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.12em]">
+                              <tr>
+                                <th className="px-3 py-2">Produto</th>
+                                <th className="px-3 py-2">Qtd.</th>
+                                <th className="px-3 py-2">Unit.</th>
+                                <th className="px-3 py-2">Subtotal</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/10">
+                              {saleItems.map((item) => (
+                                <tr key={item.id}>
+                                  <td className="px-3 py-2 text-horebe-soft">{item.product_name}</td>
+                                  <td className="px-3 py-2">{item.quantity}</td>
+                                  <td className="px-3 py-2">{formatCurrency(item.unit_price) ?? "R$ 0,00"}</td>
+                                  <td className="px-3 py-2">{formatCurrency(item.subtotal) ?? "R$ 0,00"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </details>
+                    </td>
+                    <td className="px-5 py-4 text-horebe-gray">{getTotalQuantity(saleItems)}</td>
                     <td className="px-5 py-4 text-horebe-soft">
                       <span className={isCanceled ? "line-through" : undefined}>
                         {formatCurrency(sale.total_value) ?? "R$ 0,00"}
@@ -118,6 +148,41 @@ function StatusBadge({ canceled }: { canceled: boolean }) {
 
 function isCanceledSale(sale: Sale) {
   return sale.status === "canceled";
+}
+
+function getSaleItems(sale: Sale): SaleItem[] {
+  if (sale.items?.length) {
+    return sale.items;
+  }
+
+  return [
+    {
+      id: sale.id,
+      sale_id: sale.id,
+      product_id: sale.product_id,
+      product_name: sale.product_name,
+      quantity: sale.quantity,
+      unit_price: sale.unit_price,
+      subtotal: sale.total_value,
+      created_at: sale.created_at
+    }
+  ];
+}
+
+function formatItemsSummary(items: SaleItem[]) {
+  if (items.length === 0) {
+    return "Sem itens";
+  }
+
+  if (items.length === 1) {
+    return items[0].product_name;
+  }
+
+  return `${items[0].product_name} + ${items.length - 1} item(ns)`;
+}
+
+function getTotalQuantity(items: SaleItem[]) {
+  return items.reduce((total, item) => total + item.quantity, 0);
 }
 
 function countSalesInRange(sales: { created_at: string }[], startDate: Date, endDate: Date) {
