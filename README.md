@@ -71,12 +71,13 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 7. Rode a migration em `supabase/migrations/202606180002_fix_cancel_sales.sql`.
 8. Rode a migration em `supabase/migrations/202606190001_multi_item_sales.sql`.
 9. Rode a migration em `supabase/migrations/202606200001_product_cost_profit.sql`.
-10. Crie um usuário admin no Supabase Auth.
-11. Confirme que o bucket `products` existe em Storage e está público.
-12. Rode o projeto localmente com `npm run dev`.
-13. Acesse `/login`.
-14. Cadastre produtos no painel.
-15. Veja os produtos ativos no catálogo público.
+10. Rode a migration em `supabase/migrations/202606210001_sales_discount.sql`.
+11. Crie um usuário admin no Supabase Auth.
+12. Confirme que o bucket `products` existe em Storage e está público.
+13. Rode o projeto localmente com `npm run dev`.
+14. Acesse `/login`.
+15. Cadastre produtos no painel.
+16. Veja os produtos ativos no catálogo público.
 
 A migration cria:
 
@@ -123,18 +124,30 @@ A migration de custo, lucro e margem adiciona:
 - `sales.gross_profit`, lucro bruto estimado da venda.
 - backfill para vendas antigas com `sale_items` ou, quando não houver itens, com os campos antigos de `sales`.
 
+A migration de desconto em vendas adiciona:
+
+- `sales.subtotal_value`, valor da venda antes do desconto.
+- `sales.discount_percent`, percentual de desconto aplicado.
+- `sales.discount_value`, valor descontado.
+- `sales.total_value`, valor final pago pelo cliente, já com desconto.
+- `sales.gross_profit`, lucro bruto estimado considerando o desconto aplicado.
+- backfill para vendas antigas com desconto 0.
+
 ## Estoque, Vendas e Faturamento
 
-- Configure produtos com estoque inicial e estoque mínimo no formulário de produto.
+- O estoque é controlado em `/admin/estoque`; o formulário de produto não edita estoque inicial nem estoque mínimo.
 - Configure `Preço de venda` e `Preço de custo` no formulário de produto. O preço de custo é informação interna e não aparece para clientes.
 - Use `/admin/estoque` para ajustar saldo, registrar entrada, saída ou ajuste e ver o histórico de movimentações.
-- Use `/admin/vendas/nova` para lançar uma venda manual com um ou mais produtos. Ao salvar, o sistema cria o cabeçalho em `sales`, grava os produtos em `sale_items`, diminui `products.stock_quantity` e registra movimentações `venda` em `stock_movements`.
+- O card `Estoque baixo` conta produtos com estoque atual menor ou igual ao estoque mínimo, incluindo produtos zerados.
+- Use `/admin/vendas/nova` para lançar uma venda manual com um ou mais produtos e, se necessário, aplicar desconto sobre o subtotal. Ao salvar, o sistema cria o cabeçalho em `sales`, grava os produtos em `sale_items`, diminui `products.stock_quantity` e registra movimentações `venda` em `stock_movements`.
+- O desconto é aplicado sobre `sales.subtotal_value`; `sales.total_value` representa o valor final com desconto e `sales.discount_value` representa o valor descontado.
 - Cada venda salva o custo do produto daquele momento, então mudanças futuras em `products.cost_price` não alteram o lucro histórico.
 - Use `/admin/vendas` para cancelar uma venda lançada errada. Vendas não são apagadas: elas ficam com status `canceled`, preservando o histórico para auditoria.
 - Ao cancelar uma venda, o estoque é devolvido automaticamente para cada item e uma movimentação `cancelamento` é registrada em `stock_movements`.
 - Vendas canceladas não contam no faturamento, nos cards de receita, no total de vendas, no ticket médio nem nos produtos mais vendidos. O ranking de produtos usa `sale_items` para vendas novas e mantém fallback para vendas antigas.
 - Use `/admin/faturamento` para ver faturamento bruto, custo, lucro estimado, margem média, ticket médio, produto mais vendido, vendas recentes, produtos mais vendidos e receita por canal.
 - Se uma venda tiver quantidade maior que o estoque disponível, ela não é salva e o estoque não é alterado.
+- A sidebar do admin é organizada em grupos: `Produtos` e `Vendas`, com subabas para reduzir poluição visual.
 
 Checklist antes do deploy:
 
@@ -143,6 +156,7 @@ Checklist antes do deploy:
 - Rodar a migration corretiva `202606180002_fix_cancel_sales.sql` no Supabase.
 - Rodar a migration de vendas com múltiplos itens `202606190001_multi_item_sales.sql` no Supabase.
 - Rodar a migration de custo e lucro `202606200001_product_cost_profit.sql` no Supabase.
+- Rodar a migration de desconto em vendas `202606210001_sales_discount.sql` no Supabase.
 - Conferir RLS.
 - Fazer deploy na Vercel.
 - Testar `/admin/vendas/nova`.

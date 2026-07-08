@@ -49,6 +49,9 @@ export type Sale = {
   product_name: string;
   quantity: number;
   unit_price: number | null;
+  subtotal_value?: number | null;
+  discount_percent?: number | null;
+  discount_value?: number | null;
   total_value: number;
   total_cost?: number | null;
   gross_profit?: number | null;
@@ -86,6 +89,7 @@ export type SaleItemInput = {
 
 export type SaleInput = {
   items: SaleItemInput[];
+  discount_percent?: number | null;
   sales_channel?: string | null;
   customer_name?: string | null;
   notes?: string | null;
@@ -123,6 +127,8 @@ export type BillingSummary = {
   todayProfit: number;
   last7DaysProfit: number;
   monthProfit: number;
+  totalSubtotal: number;
+  totalDiscount: number;
   totalCost: number;
   grossProfit: number;
   totalSales: number;

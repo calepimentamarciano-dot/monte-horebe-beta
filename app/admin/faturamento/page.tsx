@@ -25,6 +25,8 @@ export default async function BillingPage() {
         <StatCard label="Lucro estimado hoje" value={formatCurrency(summary.todayProfit) ?? "R$ 0,00"} icon={BadgeDollarSign} />
         <StatCard label="Faturamento ultimos 7 dias" value={formatCurrency(summary.last7DaysRevenue) ?? "R$ 0,00"} icon={BarChart3} />
         <StatCard label="Lucro ultimos 7 dias" value={formatCurrency(summary.last7DaysProfit) ?? "R$ 0,00"} icon={BadgeDollarSign} />
+        <StatCard label="Receita antes desconto" value={formatCurrency(summary.totalSubtotal) ?? "R$ 0,00"} icon={Wallet} />
+        <StatCard label="Descontos concedidos" value={formatCurrency(summary.totalDiscount) ?? "R$ 0,00"} icon={BadgeDollarSign} />
         <StatCard label="Receita do mes" value={formatCurrency(summary.monthRevenue) ?? "R$ 0,00"} icon={BadgeDollarSign} />
         <StatCard label="Lucro do mes" value={formatCurrency(summary.monthProfit) ?? "R$ 0,00"} icon={BadgeDollarSign} />
         <StatCard label="Ticket medio" value={formatCurrency(summary.averageTicket) ?? "R$ 0,00"} icon={ShoppingBag} />
@@ -36,13 +38,15 @@ export default async function BillingPage() {
         <section className="glass-panel overflow-hidden rounded-2xl">
           <TableTitle title="Vendas recentes" />
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[920px] text-left text-sm">
+            <table className="w-full min-w-[1040px] text-left text-sm">
               <thead className="bg-white/[0.035] text-xs uppercase tracking-[0.16em] text-horebe-gray">
                 <tr>
                   <th className="px-5 py-4">Data</th>
                   <th className="px-5 py-4">Produto</th>
                   <th className="px-5 py-4">Quantidade</th>
-                  <th className="px-5 py-4">Faturamento</th>
+                  <th className="px-5 py-4">Subtotal</th>
+                  <th className="px-5 py-4">Desconto</th>
+                  <th className="px-5 py-4">Total final</th>
                   <th className="px-5 py-4">Custo</th>
                   <th className="px-5 py-4">Lucro</th>
                   <th className="px-5 py-4">Margem</th>
@@ -58,6 +62,13 @@ export default async function BillingPage() {
                       <td className="px-5 py-4 text-horebe-gray">{formatDate(sale.created_at)}</td>
                       <td className="px-5 py-4 font-semibold text-horebe-soft">{formatItemsSummary(saleItems)}</td>
                       <td className="px-5 py-4 text-horebe-gray">{getTotalQuantity(saleItems)}</td>
+                      <td className="px-5 py-4 text-horebe-gray">{formatCurrency(getSaleSubtotal(sale)) ?? "R$ 0,00"}</td>
+                      <td className="px-5 py-4 text-horebe-gray">
+                        {formatCurrency(getSaleDiscount(sale)) ?? "R$ 0,00"}
+                        {getSaleDiscountPercent(sale) > 0 ? (
+                          <span className="ml-1 text-xs">({formatMargin(getSaleDiscountPercent(sale))})</span>
+                        ) : null}
+                      </td>
                       <td className="px-5 py-4 text-horebe-soft">{formatCurrency(sale.total_value) ?? "R$ 0,00"}</td>
                       <td className="px-5 py-4 text-horebe-gray">{formatCurrency(getSaleCost(sale)) ?? "R$ 0,00"}</td>
                       <td className="px-5 py-4 text-horebe-soft">{formatCurrency(getSaleProfit(sale)) ?? "R$ 0,00"}</td>
@@ -164,6 +175,22 @@ function getSaleProfit(sale: Sale) {
   }
 
   return getSaleItems(sale).reduce((total, item) => total + (Number(item.gross_profit) || 0), 0);
+}
+
+function getSaleSubtotal(sale: Sale) {
+  if (sale.subtotal_value !== null && sale.subtotal_value !== undefined) {
+    return Number(sale.subtotal_value) || 0;
+  }
+
+  return Number(sale.total_value ?? 0) + getSaleDiscount(sale);
+}
+
+function getSaleDiscount(sale: Sale) {
+  return Number(sale.discount_value ?? 0) || 0;
+}
+
+function getSaleDiscountPercent(sale: Sale) {
+  return Number(sale.discount_percent ?? 0) || 0;
 }
 
 function getSaleMargin(sale: Sale) {

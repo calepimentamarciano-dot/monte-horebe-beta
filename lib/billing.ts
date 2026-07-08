@@ -15,6 +15,8 @@ export async function getBillingSummary(): Promise<BillingSummary> {
   const bestSellingProducts = groupSalesByProduct(sales);
 
   const totalRevenue = sumRevenue(sales);
+  const totalSubtotal = sumSubtotal(sales);
+  const totalDiscount = sumDiscount(sales);
   const totalCost = sumCost(sales);
   const grossProfit = sumProfit(sales);
   const totalSales = sales.length;
@@ -29,6 +31,8 @@ export async function getBillingSummary(): Promise<BillingSummary> {
     todayProfit: sumProfit(todaySales),
     last7DaysProfit: sumProfit(last7DaysSales),
     monthProfit: sumProfit(monthSales),
+    totalSubtotal,
+    totalDiscount,
     totalCost,
     grossProfit,
     totalSales,
@@ -122,6 +126,14 @@ function sumRevenue(sales: Sale[]) {
   return sales.reduce((total, sale) => total + toNumber(sale.total_value), 0);
 }
 
+function sumSubtotal(sales: Sale[]) {
+  return sales.reduce((total, sale) => total + getSaleSubtotal(sale), 0);
+}
+
+function sumDiscount(sales: Sale[]) {
+  return sales.reduce((total, sale) => total + toNumber(sale.discount_value), 0);
+}
+
 function sumCost(sales: Sale[]) {
   return sales.reduce((total, sale) => total + getSaleCost(sale), 0);
 }
@@ -144,6 +156,14 @@ function getSaleProfit(sale: Sale) {
   }
 
   return getSaleItems(sale).reduce((total, item) => total + toNumber(item.gross_profit), 0);
+}
+
+function getSaleSubtotal(sale: Sale) {
+  if (sale.subtotal_value !== null && sale.subtotal_value !== undefined) {
+    return toNumber(sale.subtotal_value);
+  }
+
+  return toNumber(sale.total_value) + toNumber(sale.discount_value);
 }
 
 function toNumber(value: number | string | null | undefined) {

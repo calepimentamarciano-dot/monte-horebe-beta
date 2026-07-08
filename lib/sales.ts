@@ -83,11 +83,14 @@ export async function createSale(input: SaleInput) {
       throw new Error("Informe ao menos um produto com quantidade valida para a venda.");
     }
 
+    const discountPercent = normalizePercent(input.discount_percent ?? 0);
+
     const { data: saleId, error } = await supabase.rpc("create_multi_item_sale", {
       p_items: items,
       p_sales_channel: cleanText(input.sales_channel),
       p_customer_name: cleanText(input.customer_name),
-      p_notes: cleanText(input.notes)
+      p_notes: cleanText(input.notes),
+      p_discount_percent: discountPercent
     });
 
     if (error || !saleId) {
@@ -154,6 +157,20 @@ function normalizeMoney(value?: number | null) {
 function toPositiveInteger(value: number) {
   const parsed = Math.floor(Number(value));
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function normalizePercent(value: number) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error("Desconto invalido.");
+  }
+
+  if (parsed > 100) {
+    throw new Error("O desconto nao pode ser maior que 100%.");
+  }
+
+  return Math.round(parsed * 100) / 100;
 }
 
 function cleanText(value?: string | null) {

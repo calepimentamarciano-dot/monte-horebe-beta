@@ -16,6 +16,7 @@ export async function createSaleAction(
   try {
     await createSale({
       items: getSaleItems(formData),
+      discount_percent: getDiscountPercent(formData),
       sales_channel: getString(formData, "sales_channel") || null,
       customer_name: getString(formData, "customer_name") || null,
       notes: getString(formData, "notes") || null
@@ -90,4 +91,18 @@ function toOptionalNumber(value?: string) {
 
   const parsed = Number(normalizedValue);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getDiscountPercent(formData: FormData) {
+  const parsed = toOptionalNumber(getString(formData, "discount_percent")) ?? 0;
+
+  if (parsed < 0) {
+    throw new Error("Desconto invalido.");
+  }
+
+  if (parsed > 100) {
+    throw new Error("O desconto nao pode ser maior que 100%.");
+  }
+
+  return parsed;
 }

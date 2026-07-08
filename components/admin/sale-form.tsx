@@ -23,18 +23,27 @@ type SaleFormItem = {
 };
 
 const initialState: SaleActionState = {};
+const discountOptions = ["0", "5", "10", "15", "20", "25", "30", "35", "40", "45", "75", "custom"];
 
 export function SaleForm({ products }: SaleFormProps) {
   const [state, formAction, pending] = useActionState(createSaleAction, initialState);
   const [items, setItems] = useState<SaleFormItem[]>([createEmptyItem()]);
+  const [discountOption, setDiscountOption] = useState("0");
+  const [customDiscount, setCustomDiscount] = useState("");
   const productMap = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const stockWarnings = useMemo(() => getStockWarnings(items, productMap), [items, productMap]);
   const validItems = items.filter((item) => item.productId && item.quantity > 0);
   const totalQuantity = validItems.reduce((total, item) => total + item.quantity, 0);
-  const totalValue = validItems.reduce((total, item) => total + getItemSubtotal(item), 0);
+  const subtotalValue = validItems.reduce((total, item) => total + getItemSubtotal(item), 0);
+  const totalCost = validItems.reduce((total, item) => total + getItemCost(item, productMap), 0);
+  const discountPercent = getDiscountPercent(discountOption, customDiscount);
+  const discountValue = subtotalValue * discountPercent / 100;
+  const totalValue = Math.max(subtotalValue - discountValue, 0);
+  const estimatedProfit = totalValue - totalCost;
   const hasInvalidItem = items.some((item) => item.productId && item.quantity <= 0);
+  const hasInvalidDiscount = discountOption === "custom" && !isValidCustomDiscount(customDiscount);
   const hasStockWarning = stockWarnings.length > 0;
-  const canSubmit = products.length > 0 && validItems.length > 0 && !hasInvalidItem && !hasStockWarning;
+  const canSubmit = products.length > 0 && validItems.length > 0 && !hasInvalidItem && !hasInvalidDiscount && !hasStockWarning;
 
   function updateItem(id: string, changes: Partial<SaleFormItem>) {
     setItems((currentItems) =>
@@ -64,6 +73,8 @@ export function SaleForm({ products }: SaleFormProps) {
 
   return (
     <form action={formAction} className="glass-panel rounded-2xl p-5">
+      <input type="hidden" name="discount_percent" value={discountPercent.toFixed(2)} />
+
       <div className="grid gap-4 md:grid-cols-2">
         <Select label="Canal da venda" name="sales_channel" defaultValue="WhatsApp">
           <option value="WhatsApp">WhatsApp</option>
@@ -175,9 +186,43 @@ export function SaleForm({ products }: SaleFormProps) {
         <Textarea label="Observacao" name="notes" rows={4} placeholder="Opcional" />
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-3">
+      <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Select
+            label="Desconto da venda"
+            value={discountOption}
+            onChange={(event) => setDiscountOption(event.target.value)}
+          >
+            {discountOptions.map((option) => (
+              <option key={option} value={option}>
+                {option === "custom" ? "Personalizado" : option === "0" ? "Sem desconto / 0%" : `${option}%`}
+              </option>
+            ))}
+          </Select>
+
+          {discountOption === "custom" ? (
+            <Input
+              label="Desconto personalizado (%)"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={customDiscount}
+              onChange={(event) => setCustomDiscount(event.target.value)}
+              placeholder="0 a 100"
+              aria-invalid={hasInvalidDiscount}
+            />
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Itens vendidos" value={totalQuantity.toString()} />
-        <SummaryCard label="Total calculado" value={formatCurrency(totalValue) ?? "R$ 0,00"} />
+        <SummaryCard label="Subtotal" value={formatCurrency(subtotalValue) ?? "R$ 0,00"} />
+        <SummaryCard label="Valor do desconto" value={formatCurrency(discountValue) ?? "R$ 0,00"} />
+        <SummaryCard label="Total final" value={formatCurrency(totalValue) ?? "R$ 0,00"} />
+        <SummaryCard label="Custo total" value={formatCurrency(totalCost) ?? "R$ 0,00"} />
+        <SummaryCard label="Lucro estimado" value={formatCurrency(estimatedProfit) ?? "R$ 0,00"} />
         <SummaryCard label="Estoque" value={hasStockWarning ? "Revise" : "Validado"} />
       </div>
 
@@ -192,6 +237,8 @@ export function SaleForm({ products }: SaleFormProps) {
       ))}
 
       {hasInvalidItem ? <Message tone="danger">Revise as quantidades informadas.</Message> : null}
+
+      {hasInvalidDiscount ? <Message tone="danger">Desconto invalido.</Message> : null}
 
       {state.error ? <Message tone="danger">{state.error}</Message> : null}
 
@@ -234,6 +281,31 @@ function getItemSubtotal(item: SaleFormItem) {
   if (!Number.isFinite(unitPrice) || unitPrice < 0 || item.quantity <= 0) return 0;
 
   return unitPrice * item.quantity;
+}
+
+function getItemCost(item: SaleFormItem, productMap: Map<string, Product>) {
+  const product = item.productId ? productMap.get(item.productId) : null;
+  const unitCost = Number(product?.cost_price ?? 0);
+
+  if (!Number.isFinite(unitCost) || unitCost < 0 || item.quantity <= 0) return 0;
+
+  return unitCost * item.quantity;
+}
+
+function getDiscountPercent(discountOption: string, customDiscount: string) {
+  const value = discountOption === "custom" ? customDiscount : discountOption;
+  const parsed = Number(value.replace(",", "."));
+
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) return 0;
+
+  return parsed;
+}
+
+function isValidCustomDiscount(value: string) {
+  if (!value.trim()) return false;
+
+  const parsed = Number(value.replace(",", "."));
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 100;
 }
 
 function getStockWarnings(items: SaleFormItem[], productMap: Map<string, Product>) {

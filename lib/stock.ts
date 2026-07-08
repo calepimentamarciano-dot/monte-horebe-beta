@@ -22,6 +22,13 @@ export async function getStockProducts(): Promise<Product[]> {
   return data as Product[];
 }
 
+export function isLowStockProduct(product: Product) {
+  const stock = product.stock_quantity ?? 0;
+  const minStock = product.min_stock ?? 0;
+
+  return stock <= minStock;
+}
+
 export async function updateProductStock(productId: string, quantity: number, minStock: number) {
   const supabase = await createClient();
   if (!supabase) {

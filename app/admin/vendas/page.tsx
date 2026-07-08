@@ -1,7 +1,8 @@
-import { Plus, Receipt, TrendingUp } from "lucide-react";
+import { BadgeDollarSign, Plus, Receipt, ReceiptText, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { CancelSaleForm } from "@/components/admin/cancel-sale-form";
+import { ModuleNav } from "@/components/admin/module-nav";
 import { StatCard } from "@/components/admin/stat-card";
 import { getBillingSummary } from "@/lib/billing";
 import { getSales } from "@/lib/sales";
@@ -31,6 +32,13 @@ export default async function SalesPage() {
           </Link>
         }
       />
+      <ModuleNav
+        items={[
+          { href: "/admin/vendas", label: "Historico de vendas", icon: ReceiptText, active: true },
+          { href: "/admin/vendas/nova", label: "Nova venda", icon: Plus },
+          { href: "/admin/faturamento", label: "Faturamento", icon: BadgeDollarSign }
+        ]}
+      />
 
       <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Vendas hoje" value={todaySales} icon={Receipt} />
@@ -50,7 +58,7 @@ export default async function SalesPage() {
                 <th className="px-5 py-4">Data</th>
                 <th className="px-5 py-4">Itens</th>
                 <th className="px-5 py-4">Quantidade total</th>
-                <th className="px-5 py-4">Valor total</th>
+                <th className="px-5 py-4">Total final</th>
                 <th className="px-5 py-4">Resultado</th>
                 <th className="px-5 py-4">Canal</th>
                 <th className="px-5 py-4">Cliente</th>
@@ -109,6 +117,13 @@ export default async function SalesPage() {
                       {isCanceled ? <span className="ml-2 text-xs text-red-100">Cancelada</span> : null}
                     </td>
                     <td className="px-5 py-4 text-horebe-gray">
+                      <div>Subtotal: {formatCurrency(getSaleSubtotal(sale)) ?? "R$ 0,00"}</div>
+                      <div>
+                        Desconto: {formatCurrency(getSaleDiscount(sale)) ?? "R$ 0,00"}
+                        {getSaleDiscountPercent(sale) > 0 ? (
+                          <span className="ml-1 text-xs">({formatMargin(getSaleDiscountPercent(sale))})</span>
+                        ) : null}
+                      </div>
                       <div>Custo: {formatCurrency(getSaleCost(sale)) ?? "R$ 0,00"}</div>
                       <div className="text-horebe-soft">Lucro: {formatCurrency(getSaleProfit(sale)) ?? "R$ 0,00"}</div>
                       <div>Margem: {formatMargin(getSaleMargin(sale))}</div>
@@ -213,6 +228,22 @@ function getSaleProfit(sale: Sale) {
   }
 
   return getSaleItems(sale).reduce((total, item) => total + (Number(item.gross_profit) || 0), 0);
+}
+
+function getSaleSubtotal(sale: Sale) {
+  if (sale.subtotal_value !== null && sale.subtotal_value !== undefined) {
+    return Number(sale.subtotal_value) || 0;
+  }
+
+  return Number(sale.total_value ?? 0) + getSaleDiscount(sale);
+}
+
+function getSaleDiscount(sale: Sale) {
+  return Number(sale.discount_value ?? 0) || 0;
+}
+
+function getSaleDiscountPercent(sale: Sale) {
+  return Number(sale.discount_percent ?? 0) || 0;
 }
 
 function getSaleMargin(sale: Sale) {

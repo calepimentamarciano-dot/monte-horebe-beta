@@ -2,14 +2,11 @@ import { AlertTriangle, Archive, Boxes, Clock } from "lucide-react";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { StockManager } from "@/components/admin/stock-manager";
-import { getStockMovements, getStockProducts } from "@/lib/stock";
+import { getStockMovements, getStockProducts, isLowStockProduct } from "@/lib/stock";
 
 export default async function StockPage() {
   const [products, movements] = await Promise.all([getStockProducts(), getStockMovements()]);
-  const lowStockProducts = products.filter((product) => {
-    const stock = product.stock_quantity ?? 0;
-    return stock > 0 && stock <= (product.min_stock ?? 0);
-  }).length;
+  const lowStockProducts = products.filter(isLowStockProduct).length;
   const totalUnits = products.reduce((total, product) => total + (product.stock_quantity ?? 0), 0);
   const lastMovement = movements[0]?.created_at ? formatDate(movements[0].created_at) : "Sem registro";
 

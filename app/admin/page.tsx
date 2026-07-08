@@ -5,7 +5,7 @@ import { StatCard } from "@/components/admin/stat-card";
 import { getBillingSummary } from "@/lib/billing";
 import { getAdminCategories } from "@/lib/categories";
 import { getAdminProducts } from "@/lib/products";
-import { getStockProducts } from "@/lib/stock";
+import { getStockProducts, isLowStockProduct } from "@/lib/stock";
 import { formatCurrency } from "@/lib/utils";
 
 const shortcuts = [
@@ -27,10 +27,7 @@ export default async function AdminPage() {
   ]);
   const activeProducts = products.filter((product) => product.is_active).length;
   const featuredProducts = products.filter((product) => product.is_featured).length;
-  const lowStockProducts = stockProducts.filter((product) => {
-    const stock = product.stock_quantity ?? 0;
-    return stock > 0 && stock <= (product.min_stock ?? 0);
-  }).length;
+  const lowStockProducts = stockProducts.filter(isLowStockProduct).length;
 
   return (
     <>

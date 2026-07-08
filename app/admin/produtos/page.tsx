@@ -1,6 +1,7 @@
-import { Plus } from "lucide-react";
+import { Boxes, FolderTree, Plus } from "lucide-react";
 import Link from "next/link";
 import { AdminHeader } from "@/components/admin/admin-header";
+import { ModuleNav } from "@/components/admin/module-nav";
 import { ProductTable } from "@/components/admin/product-table";
 import { getAdminProducts } from "@/lib/products";
 
@@ -21,6 +22,13 @@ export default async function AdminProductsPage() {
             Novo Produto
           </Link>
         }
+      />
+      <ModuleNav
+        items={[
+          { href: "/admin/produtos", label: "Gerenciar produtos", icon: Boxes, active: true },
+          { href: "/admin/produtos/novo", label: "Novo produto", icon: Plus },
+          { href: "/admin/categorias", label: "Categorias", icon: FolderTree }
+        ]}
       />
       <ProductTable products={products} />
     </>
